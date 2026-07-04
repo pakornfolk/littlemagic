@@ -4,8 +4,8 @@
 
 // Globals and APIs loaded from window.LittleMagicDB, window.showToast, window.formatThaiDate
 
-const ADMIN_PIN = "1234"; // Default admin PIN, feel free to customize
-let currentPINInput = "";
+const ADMIN_EMAIL = "littlemagic.official2025@gmail.com";
+const ADMIN_PASSWORD = "admin1234";
 let allBookings = [];
 let currentFilter = "all";
 
@@ -30,12 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 1. PIN Security Overlay
+// 1. Authentication Security Overlay
 function initSecurity() {
     const overlay = document.getElementById("admin-auth-overlay");
-    const pinDots = document.querySelectorAll(".pin-dot");
-    const pinKeys = document.querySelectorAll(".pin-key");
-    const dotsContainer = document.getElementById("pin-dots");
+    const loginForm = document.getElementById("admin-login-form");
     
     if (!overlay) return;
     
@@ -46,66 +44,26 @@ function initSecurity() {
         return;
     }
     
-    // Helper to update visual dots indicator
-    function updateDots() {
-        pinDots.forEach((dot, idx) => {
-            if (idx < currentPINInput.length) {
-                dot.classList.add("filled");
+    if (loginForm) {
+        loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            
+            const emailInput = document.getElementById("admin-email").value.trim();
+            const passwordInput = document.getElementById("admin-password").value;
+            
+            if (emailInput === ADMIN_EMAIL && passwordInput === ADMIN_PASSWORD) {
+                showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ", "success");
+                sessionStorage.setItem("lm_admin_auth", "true");
+                overlay.style.opacity = "0";
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    requestNotificationPermission();
+                }, 300);
             } else {
-                dot.classList.remove("filled");
+                showToast("อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้งครับ", "error");
             }
         });
     }
-
-    // Function to verify PIN when OK is clicked
-    function verifyPIN() {
-        if (currentPINInput.length === 0) {
-            showToast("กรุณากรอกรหัส PIN ก่อนกด OK", "error");
-            return;
-        }
-
-        if (currentPINInput === ADMIN_PIN) {
-            showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ", "success");
-            sessionStorage.setItem("lm_admin_auth", "true");
-            overlay.style.opacity = "0";
-            setTimeout(() => {
-                overlay.style.display = "none";
-                requestNotificationPermission();
-            }, 300);
-        } else {
-            showToast("รหัส PIN ไม่ถูกต้อง กรุณาลองอีกครั้ง", "error");
-            currentPINInput = "";
-            updateDots();
-            
-            // Add error shake feedback
-            if (dotsContainer) {
-                dotsContainer.style.transform = "translateX(10px)";
-                setTimeout(() => dotsContainer.style.transform = "translateX(-10px)", 80);
-                setTimeout(() => dotsContainer.style.transform = "translateX(6px)", 160);
-                setTimeout(() => dotsContainer.style.transform = "translateX(-6px)", 240);
-                setTimeout(() => dotsContainer.style.transform = "translateX(0)", 320);
-            }
-        }
-    }
-
-    // Bind PIN Pad Keys
-    pinKeys.forEach(key => {
-        key.addEventListener("click", () => {
-            const val = key.dataset.val;
-            
-            if (val === "clear") {
-                currentPINInput = "";
-                updateDots();
-            } else if (val === "ok") {
-                verifyPIN();
-            } else {
-                if (currentPINInput.length < 4) {
-                    currentPINInput += val;
-                    updateDots();
-                }
-            }
-        });
-    });
 }
 
 // 2. Filter buttons binding

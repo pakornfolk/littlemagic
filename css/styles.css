@@ -259,6 +259,15 @@ header .navbar {
     box-shadow: var(--box-shadow-medium);
 }
 
+a.stat-card {
+    text-decoration: none;
+    color: inherit;
+}
+
+a.stat-card:hover .stat-info h3 {
+    color: var(--color-accent-magic);
+}
+
 .stat-icon {
     width: 48px;
     height: 48px;

@@ -11,36 +11,28 @@
 </head>
 <body>
 
-    <!-- PIN SECURITY OVERLAY (Displayed until authenticated) -->
+    <!-- SECURITY OVERLAY (Email & Password Login) -->
     <div id="admin-auth-overlay" class="admin-login-overlay">
-        <div class="admin-login-box">
-            <div style="color: var(--color-accent-magic); margin-bottom: 15px;">
-                <i class="fas fa-lock" style="font-size: 40px;"></i>
+        <div class="admin-login-box" style="max-width: 420px; text-align: left;">
+            <div style="color: var(--color-accent-magic); text-align: center; margin-bottom: 15px;">
+                <i class="fas fa-user-shield" style="font-size: 48px;"></i>
             </div>
-            <h2>เข้าสู่ระบบผู้ดูแลร้าน</h2>
-            <p>กรุณาระบุรหัส PIN 4 หลักเพื่อเข้าสู่หน้าต่างแผงควบคุมหลัก</p>
+            <h2 style="text-align: center; margin-bottom: 8px;">เข้าสู่ระบบผู้ดูแลร้าน</h2>
+            <p style="text-align: center; margin-bottom: 25px; color: var(--color-primary); font-size: 14px;">กรุณาระบุอีเมลและรหัสผ่านเพื่อเข้าสู่แผงควบคุมหลังร้าน</p>
             
-            <div id="pin-dots" class="pin-dots-container">
-                <span class="pin-dot"></span>
-                <span class="pin-dot"></span>
-                <span class="pin-dot"></span>
-                <span class="pin-dot"></span>
-            </div>
-            
-            <div class="pin-pad">
-                <button class="pin-key" data-val="1">1</button>
-                <button class="pin-key" data-val="2">2</button>
-                <button class="pin-key" data-val="3">3</button>
-                <button class="pin-key" data-val="4">4</button>
-                <button class="pin-key" data-val="5">5</button>
-                <button class="pin-key" data-val="6">6</button>
-                <button class="pin-key" data-val="7">7</button>
-                <button class="pin-key" data-val="8">8</button>
-                <button class="pin-key" data-val="9">9</button>
-                <button class="pin-key clear" data-val="clear"><i class="fas fa-backspace"></i></button>
-                <button class="pin-key" data-val="0">0</button>
-                <button class="pin-key ok" data-val="ok" style="background-color: var(--color-status-active); color: #fff; font-size:16px;">OK</button>
-            </div>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-email"><i class="fas fa-envelope"></i> อีเมลแอดมิน</label>
+                    <input type="email" id="admin-email" class="form-input" placeholder="เช่น admin@littlemagic.com" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="admin-password"><i class="fas fa-key"></i> รหัสผ่าน</label>
+                    <input type="password" id="admin-password" class="form-input" placeholder="กรอกรหัสผ่าน" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                    <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+                </button>
+            </form>
         </div>
     </div>
 

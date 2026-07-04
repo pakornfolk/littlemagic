@@ -1221,6 +1221,7 @@ input[type="date"].form-input {
 }
 
 .admin-login-box {
+    position: relative; /* Added relative positioning for children absolute positioning */
     background: #fff;
     border-radius: var(--border-radius-lg);
     padding: 40px;
@@ -1229,6 +1230,24 @@ input[type="date"].form-input {
     text-align: center;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
     animation: scaleIn 0.3s ease;
+}
+
+.admin-login-close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition-smooth);
+}
+
+.admin-login-close-btn:hover {
+    color: var(--color-accent-magic);
 }
 
 @keyframes scaleIn {

@@ -171,6 +171,7 @@ function initBookingForm() {
     inputDuration.addEventListener("change", calculatePrice);
     if (inputPlayers) {
         inputPlayers.addEventListener("change", calculatePrice);
+        inputPlayers.addEventListener("input", calculatePrice);
     }
     
     // Bind date change to private room availability check and Thursday block
@@ -281,6 +282,7 @@ function initBookingForm() {
             // Show Success Modal/Screen
             showBookingSuccess(booking);
             sendNewBookingEmailToShop(booking); // Alert the store of new booking
+            sendPendingBookingEmailToCustomer(booking); // Send confirmation email to customer (pending review)
             form.reset();
             
             // Reset to defaults
@@ -852,6 +854,48 @@ async function sendNewBookingEmailToShop(booking) {
         console.log("New booking alert email sent to shop.");
     } catch (error) {
         console.error("Failed to send new booking alert email to shop:", error);
+    }
+}
+
+// Send notification to the customer's email when a new booking is created (Pending approval status)
+async function sendPendingBookingEmailToCustomer(booking) {
+    if (!booking.email) {
+        console.log("No email address provided. Skipping pending email notification to customer.");
+        return;
+    }
+
+    if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
+        console.warn("EmailJS is not configured. Skipping customer pending email notification.");
+        return;
+    }
+
+    if (typeof emailjs === 'undefined') {
+        console.error("EmailJS SDK not found. Cannot send email.");
+        return;
+    }
+
+    try {
+        const customerParams = {
+            to_email: booking.email,
+            to_name: booking.name,
+            booking_code: booking.bookingCode,
+            status_text: "ได้รับข้อมูลการจองคิวแล้ว (รอร้านตรวจสอบ)",
+            status_detail: "ระบบได้รับข้อมูลการจองคิวของคุณเรียบร้อยแล้ว ขณะนี้อยู่ระหว่างการตรวจสอบและอนุมัติจากทางร้าน หากร้านยืนยันคิวแล้ว จะมีอีเมลยืนยันส่งไปหาคุณอีกครั้งนะครับ",
+            date: formatThaiDate(booking.date),
+            time: booking.time,
+            players: booking.players,
+            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            price: booking.totalPrice
+        };
+
+        await emailjs.send(
+            window.emailConfig.serviceId,
+            window.emailConfig.templateId,
+            customerParams
+        );
+        console.log("Pending confirmation email sent to customer.");
+    } catch (error) {
+        console.error("Failed to send pending email to customer:", error);
     }
 }
 

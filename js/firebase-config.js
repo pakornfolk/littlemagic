@@ -17,6 +17,17 @@ window.firebaseConfig = {
     measurementId: "G-VBQB147104"
 };
 
+// EmailJS Configuration
+// 1. Sign up on emailjs.com
+// 2. Connect a Gmail/Email service -> Get SERVICE_ID
+// 3. Create a template -> Get TEMPLATE_ID
+// 4. Go to Account -> API Keys -> Get PUBLIC_KEY
+window.emailConfig = {
+    publicKey: "MuCIs-lsUtiucErPO",   // Replace with your Public Key
+    serviceId: "service_7k7er7j",   // Replace with your Service ID
+    templateId: "template_4ktcj21"  // Replace with your Template ID
+};
+
 /**
  * Checks if the user has replaced the placeholder values with actual Firebase credentials.
  * @returns {boolean} True if Firestore can be initialized, false otherwise.

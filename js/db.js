@@ -111,6 +111,7 @@
         const newBooking = {
             name: bookingData.name,
             phone: bookingData.phone,
+            email: bookingData.email || "", // Store email
             players: parseInt(bookingData.players),
             roomType: bookingData.roomType, // 'regular' or 'private'
             date: bookingData.date,

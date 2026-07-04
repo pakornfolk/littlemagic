@@ -16,6 +16,18 @@ document.addEventListener("DOMContentLoaded", () => {
     initBellNotification();
     initAdminQueueSubscription();
     displayDatabaseMode();
+
+    // Initialize EmailJS if configured
+    if (window.emailConfig && window.emailConfig.publicKey && window.emailConfig.publicKey !== "YOUR_EMAILJS_PUBLIC_KEY") {
+        try {
+            if (typeof emailjs !== 'undefined') {
+                emailjs.init({ publicKey: window.emailConfig.publicKey });
+                console.log("EmailJS SDK initialized.");
+            }
+        } catch (e) {
+            console.error("Failed to initialize EmailJS:", e);
+        }
+    }
 });
 
 // 1. PIN Security Overlay
@@ -324,7 +336,10 @@ function bindActionButtons(row, booking) {
         btnConfirm.addEventListener("click", async () => {
             btnConfirm.disabled = true;
             const success = await LittleMagicDB.updateBookingStatus(booking.id, 'confirmed');
-            if (success) showToast(`อนุมัติการจองคิว ${booking.bookingCode} สำเร็จ`, "success");
+            if (success) {
+                showToast(`อนุมัติการจองคิว ${booking.bookingCode} สำเร็จ`, "success");
+                sendStatusEmailNotification(booking, 'confirmed');
+            }
         });
     }
     
@@ -334,7 +349,10 @@ function bindActionButtons(row, booking) {
         btnCheckin.addEventListener("click", async () => {
             btnCheckin.disabled = true;
             const success = await LittleMagicDB.updateBookingStatus(booking.id, 'active');
-            if (success) showToast(`เช็คอินเข้าโต๊ะ ${booking.bookingCode} แล้ว`, "success");
+            if (success) {
+                showToast(`เช็คอินเข้าโต๊ะ ${booking.bookingCode} แล้ว`, "success");
+                sendStatusEmailNotification(booking, 'active');
+            }
         });
     }
     
@@ -357,7 +375,10 @@ function bindActionButtons(row, booking) {
             
             btnCancel.disabled = true;
             const success = await LittleMagicDB.updateBookingStatus(booking.id, 'cancelled');
-            if (success) showToast(`ยกเลิกคิวรหัส ${booking.bookingCode} แล้ว`, "error");
+            if (success) {
+                showToast(`ยกเลิกคิวรหัส ${booking.bookingCode} แล้ว`, "error");
+                sendStatusEmailNotification(booking, 'cancelled');
+            }
         });
     }
     
@@ -461,5 +482,65 @@ function triggerDesktopNotification(booking) {
         } catch (e) {
             console.error("Failed to show desktop notification:", e);
         }
+    }
+}
+
+// Send Email Notification via EmailJS
+async function sendStatusEmailNotification(booking, newStatus) {
+    if (!booking.email) {
+        console.log(`No email address configured for booking ${booking.bookingCode}. Skipping notification.`);
+        return;
+    }
+
+    if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
+        console.warn("EmailJS is not configured or still using placeholder keys. Skipping notification.");
+        return;
+    }
+
+    try {
+        let statusTextTh = "";
+        let statusDetailTh = "";
+        switch (newStatus) {
+            case 'confirmed':
+                statusTextTh = "ยืนยันการจองเรียบร้อยแล้ว";
+                statusDetailTh = "ร้าน Little Magic ได้ยืนยันคิวของคุณแล้ว กรุณาเดินทางมาถึงก่อนเวลานัด 5-10 นาทีนะครับ";
+                break;
+            case 'active':
+                statusTextTh = "เช็คอินเข้าโต๊ะกำลังเล่น";
+                statusDetailTh = "คิวของคุณเริ่มเล่นบอร์ดเกมแล้ว ขอให้สนุกกับเวลาพิเศษนี้นะครับ!";
+                break;
+            case 'cancelled':
+                statusTextTh = "ยกเลิกคิวแล้ว";
+                statusDetailTh = "คิวการจองนี้ถูกยกเลิกแล้ว หากไม่ใช่การดำเนินการของคุณ โปรดติดต่อทางร้านผ่าน Line ID: @843audre";
+                break;
+            default:
+                return; // Do not send email for other statuses
+        }
+
+        const templateParams = {
+            to_email: booking.email,
+            to_name: booking.name,
+            booking_code: booking.bookingCode,
+            status_text: statusTextTh,
+            status_detail: statusDetailTh,
+            date: formatThaiDate(booking.date),
+            time: booking.time,
+            players: booking.players,
+            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            price: booking.totalPrice
+        };
+
+        if (typeof emailjs !== 'undefined') {
+            await emailjs.send(
+                window.emailConfig.serviceId,
+                window.emailConfig.templateId,
+                templateParams
+            );
+            console.log(`Email notification sent successfully for status: ${newStatus}`);
+        } else {
+            console.error("EmailJS SDK not found. Cannot send email.");
+        }
+    } catch (error) {
+        console.error("Failed to send email notification:", error);
     }
 }

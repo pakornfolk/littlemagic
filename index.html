@@ -105,6 +105,14 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="booking-email"><i class="fas fa-envelope"></i> อีเมลสำหรับรับแจ้งเตือนสถานะคิว</label>
+                            <input type="email" id="booking-email" class="form-input" placeholder="เช่น littlemagic.official2025@gmail.com" required>
+                            <span style="font-size: 11px; color: var(--color-primary); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-info-circle"></i> หากไม่พบอีเมลแจ้งเตือน 1-2 นาที อีเมลอาจจะตกหล่นไปอยู่ในกล่อง <strong>"จดหมายขยะ (Spam / Junk)"</strong> นะครับ
+                            </span>
+                        </div>
+
+                        <div class="form-group">
                             <label><i class="fas fa-layer-group"></i> เลือกรูปแบบการเล่นและพื้นที่บริการ</label>
                             <div class="room-type-selector" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                                 <!-- Regular Hourly Card -->
@@ -113,14 +121,14 @@
                                     <div class="room-card-title"><i class="fas fa-couch"></i> โซนปกติ (รายชั่วโมง)</div>
                                     <div class="room-card-price">40 บาท / คน / ชั่วโมง</div>
                                 </label>
-                                
+
                                 <!-- Regular Daily Card -->
                                 <label class="room-type-card" for="room-regular-daily">
                                     <input type="radio" id="room-regular-daily" name="roomSelect" value="regular_daily">
                                     <div class="room-card-title"><i class="fas fa-calendar-day"></i> โซนปกติ (เหมารายวัน)</div>
                                     <div class="room-card-price">150 บาท / คน (เล่นทั้งวัน)</div>
                                 </label>
-                                
+
                                 <!-- Private Hourly Card -->
                                 <label class="room-type-card" for="room-private-hourly">
                                     <input type="radio" id="room-private-hourly" name="roomSelect" value="private_hourly">
@@ -128,7 +136,7 @@
                                     <div class="room-card-price">60 บาท / คน / ชั่วโมง</div>
                                     <div class="room-card-occupancy private-occupancy-text" style="font-size: 11px; margin-top: 6px; color: var(--color-primary);">กำลังคำนวณห้องว่าง...</div>
                                 </label>
-                                
+
                                 <!-- Private Daily Card -->
                                 <label class="room-type-card" for="room-private-daily">
                                     <input type="radio" id="room-private-daily" name="roomSelect" value="private_daily">
@@ -217,7 +225,7 @@
                         <h3><i class="fas fa-exclamation-circle"></i> กฎและเงื่อนไขการจองคิว</h3>
                         <ul>
                             <li><strong>ยกเลิกได้ล่วงหน้า:</strong> ผู้ใช้งานสามารถกดยกเลิกการจองได้ด้วยตัวเองก่อนเวลาจองจริง 1 วัน (24 ชั่วโมงขึ้นไป)</li>
-                            <li><strong>การรักษาสิทธิ์คิว:</strong> เพื่อการจัดเตรียมบอร์ดเกมและเริ่มเล่นได้เต็มชั่วโมง แนะนำเดินทางมาถึงร้านล่วงหน้าประมาณ <strong>5-10 นาที</strong> นะคะ (ทางร้านจะรักษาสิทธิ์ล็อกโต๊ะไว้ให้สูงสุด 15 นาที หากท่านมาสายเกินเวลาจองดังกล่าว คิวจะถูกสละสิทธิ์โดยอัตโนมัติเพื่อส่งต่อสิทธิ์ให้ก๊วนถัดไปค่ะ)</li>
+                            <li><strong>การรักษาสิทธิ์คิว:</strong> เพื่อการจัดเตรียมบอร์ดเกมและเริ่มเล่นได้เต็มชั่วโมง แนะนำเดินทางมาถึงร้านล่วงหน้าประมาณ <strong>5-10 นาที</strong> นะครับ (ทางร้านจะรักษาสิทธิ์ล็อกโต๊ะไว้ให้สูงสุด 15 นาที หากท่านมาสายเกินเวลาจองดังกล่าว คิวจะถูกสละสิทธิ์โดยอัตโนมัติเพื่อส่งต่อสิทธิ์ให้ก๊วนถัดไปครับ)</li>
                             <li><strong>ราคาค่าบริการ:</strong>
                                 <ul>
                                     <li>โซนปกติ: รายชั่วโมง 40 บาท/คน/ชม. (เหมารายวัน 150 บาท/คน)</li>
@@ -262,14 +270,14 @@
                     <h2>ตรวจสอบคิวและยกเลิกการจอง</h2>
                     <p style="font-size: 14px; color: var(--color-primary); margin-top: 6px;">ระบุเบอร์โทรศัพท์ที่ใช้ในการจอง หรือ รหัสจอง (Booking Code) เพื่อค้นหาประวัติการจอง</p>
                 </div>
-                
+
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <input type="text" id="lookup-search" class="form-input" placeholder="กรอกเบอร์โทรศัพท์ (เช่น 0891234567) หรือรหัสจอง (เช่น LM-12345)" style="height: 50px;">
                     <button id="lookup-btn" class="btn btn-primary" style="width: auto; height: 50px; padding: 0 24px;">
                         <i class="fas fa-search"></i> ค้นหา
                     </button>
                 </div>
-                
+
                 <!-- Results wrapper -->
                 <div id="lookup-results" class="my-bookings-list">
                     <!-- Dynamic rendering of booking history -->
@@ -281,7 +289,7 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>🎲 Little Magic Board Game Cafe - ครีเอทความสุขที่ไม่มีวันหยุด 🎲</p>
+            <p>Little Magic Board Game Cafe - ครีเอทความสุขที่ไม่มีวันหยุด</p>
             <p style="font-size: 11px; margin-top: 6px; color: var(--color-primary-light);">ติดต่อสอบถามรายละเอียดเพิ่มเติม | Line ID: <strong>@843audre</strong></p>
         </div>
     </footer>
@@ -291,6 +299,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
+    <!-- EmailJS Browser SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
     <!-- Local JS Scripts (Loaded sequentially in global scope) -->
     <script src="js/firebase-config.js"></script>
     <script src="js/db.js"></script>

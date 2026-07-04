@@ -20,6 +20,18 @@ document.addEventListener("DOMContentLoaded", () => {
     initBookingLookup();
     initQueueSubscription();
     displayDatabaseMode();
+
+    // Initialize EmailJS if configured
+    if (window.emailConfig && window.emailConfig.publicKey && window.emailConfig.publicKey !== "YOUR_EMAILJS_PUBLIC_KEY") {
+        try {
+            if (typeof emailjs !== 'undefined') {
+                emailjs.init({ publicKey: window.emailConfig.publicKey });
+                console.log("EmailJS SDK initialized on client side.");
+            }
+        } catch (e) {
+            console.error("Failed to initialize EmailJS on client:", e);
+        }
+    }
 });
 
 // 1. Toast Notification Helper
@@ -168,7 +180,7 @@ function initBookingForm() {
             if (dateVal) {
                 const dayOfWeek = new Date(dateVal).getDay(); // 0 is Sunday, 4 is Thursday
                 if (dayOfWeek === 4) {
-                    showToast("ขออภัยค่ะ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะคะ", "error");
+                    showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
                     
                     // Revert to today (or tomorrow if today is Thursday)
                     const tObj = new Date();
@@ -194,6 +206,7 @@ function initBookingForm() {
         
         const name = document.getElementById("booking-name").value.trim();
         const phone = document.getElementById("booking-phone").value.trim();
+        const email = document.getElementById("booking-email").value.trim();
         const players = inputPlayers.value;
         const date = inputDate.value;
         const time = document.getElementById("booking-time").value;
@@ -202,7 +215,7 @@ function initBookingForm() {
         if (date) {
             const dayOfWeek = new Date(date).getDay();
             if (dayOfWeek === 4) {
-                showToast("ขออภัยค่ะ ร้านปิดทำการทุกวันพฤหัสบดี", "error");
+                showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี", "error");
                 return;
             }
         }
@@ -211,7 +224,7 @@ function initBookingForm() {
         if (time) {
             const [hours, minutes] = time.split(":").map(Number);
             if (hours < 15) {
-                showToast("ขออภัยค่ะ ร้านเปิดให้บริการเวลา 15:00 น. - 24:00 น. เท่านั้นค่ะ", "error");
+                showToast("ขออภัยครับ ร้านเปิดให้บริการเวลา 15:00 น. - 24:00 น. เท่านั้นครับ", "error");
                 return;
             }
         }
@@ -227,7 +240,7 @@ function initBookingForm() {
         const duration = val.endsWith('daily') ? 'day' : inputDuration.value;
         
         // Simple validations
-        if (!name || !phone || !date || !time) {
+        if (!name || !phone || !email || !date || !time) {
             showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
             return;
         }
@@ -237,6 +250,13 @@ function initBookingForm() {
             return;
         }
 
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showToast("กรุณากรอกอีเมลที่ถูกต้อง", "error");
+            return;
+        }
+ 
         const totalPrice = calculatePrice();
         
         try {
@@ -249,6 +269,7 @@ function initBookingForm() {
             const booking = await LittleMagicDB.addBooking({
                 name,
                 phone,
+                email,
                 players,
                 roomType,
                 date,
@@ -259,10 +280,11 @@ function initBookingForm() {
             
             // Show Success Modal/Screen
             showBookingSuccess(booking);
+            sendNewBookingEmailToShop(booking); // Alert the store of new booking
             form.reset();
             
             // Reset to defaults
-            inputDate.value = today;
+            inputDate.value = todayStr;
             document.getElementById("room-regular-hourly").checked = true;
             roomCards.forEach(c => c.classList.remove("selected"));
             document.querySelector('.room-type-card[for="room-regular-hourly"]').classList.add("selected");
@@ -292,6 +314,13 @@ function showBookingSuccess(booking) {
                 <p style="color: var(--color-primary);">กรุณาบันทึกข้อมูลการจองนี้ไว้เพื่อแสดงหน้าร้าน</p>
             </div>
             
+            <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
+                <i class="fas fa-exclamation-triangle" style="margin-top: 2.5px;"></i>
+                <div>
+                    <strong>ข้อแนะนำเกี่ยวกับอีเมล:</strong> หากไม่พบอีเมลยืนยันการจองในกล่องจดหมายปกติ โปรดตรวจสอบในกล่อง <strong>"จดหมายขยะ (Spam)"</strong> นะครับ
+                </div>
+            </div>
+            
             <div class="booking-detail-card" style="margin-top: 0; margin-bottom: 20px; background: #FCFAF7;">
                 <div class="booking-detail-row">
                     <span>รหัสจอง (Booking Code)</span>
@@ -304,6 +333,10 @@ function showBookingSuccess(booking) {
                 <div class="booking-detail-row">
                     <span>เบอร์โทรศัพท์</span>
                     <span>${booking.phone}</span>
+                </div>
+                <div class="booking-detail-row">
+                    <span>อีเมลแจ้งเตือน</span>
+                    <span>${booking.email || '-'}</span>
                 </div>
                 <div class="booking-detail-row">
                     <span>พื้นที่ / ห้อง</span>
@@ -476,6 +509,7 @@ function renderLookupResults(bookings, container) {
                 const response = await LittleMagicDB.cancelBooking(booking.id);
                 if (response.success) {
                     showToast(response.message, "success");
+                    sendCancellationEmails(booking); // Send notifications
                     // Refresh search findings
                     const globalSearchBtn = document.getElementById("lookup-btn");
                     if (globalSearchBtn) globalSearchBtn.click();
@@ -716,6 +750,108 @@ function updatePrivateRoomAvailability(bookings) {
             dailyCard.style.pointerEvents = "auto";
             dailyCard.style.cursor = "pointer";
         }
+    }
+}
+
+// Send Email notifications when a customer cancels a booking
+async function sendCancellationEmails(booking) {
+    if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
+        console.warn("EmailJS is not configured. Skipping cancellation email alerts.");
+        return;
+    }
+
+    if (typeof emailjs === 'undefined') {
+        console.error("EmailJS SDK not found. Cannot send cancellation emails.");
+        return;
+    }
+
+    // 1. Send cancellation confirmation to CUSTOMER (if email is saved)
+    if (booking.email) {
+        try {
+            const customerParams = {
+                to_email: booking.email,
+                to_name: booking.name,
+                booking_code: booking.bookingCode,
+                status_text: "ยกเลิกการจองคิวแล้ว",
+                status_detail: "คุณได้กดยกเลิกคิวของคุณเรียบร้อยแล้ว หากนี่ไม่ใช่การดำเนินการของคุณ โปรดติดต่อทางร้านครับ",
+                date: formatThaiDate(booking.date),
+                time: booking.time,
+                players: booking.players,
+                room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+                price: booking.totalPrice
+            };
+
+            await emailjs.send(
+                window.emailConfig.serviceId,
+                window.emailConfig.templateId,
+                customerParams
+            );
+            console.log("Cancellation confirmation email sent to customer.");
+        } catch (error) {
+            console.error("Failed to send cancellation confirmation to customer:", error);
+        }
+    }
+
+    // 2. Send cancellation notification to STORE (always send to littlemagic.official2025@gmail.com)
+    try {
+        const storeParams = {
+            to_email: "littlemagic.official2025@gmail.com", // Shop's email
+            to_name: "แอดมิน Little Magic",
+            booking_code: booking.bookingCode,
+            status_text: "ลูกค้ายกเลิกคิวจอง",
+            status_detail: `คุณ ${booking.name} ได้กดยกเลิกการจองคิวนี้ด้วยตนเองผ่านหน้าระบบตรวจสอบคิว`,
+            date: formatThaiDate(booking.date),
+            time: booking.time,
+            players: booking.players,
+            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            price: booking.totalPrice
+        };
+
+        await emailjs.send(
+            window.emailConfig.serviceId,
+            window.emailConfig.templateId,
+            storeParams
+        );
+        console.log("Cancellation alert email sent to shop.");
+    } catch (error) {
+        console.error("Failed to send cancellation alert email to shop:", error);
+    }
+}
+
+// Send notification to the store's email when a new booking is created
+async function sendNewBookingEmailToShop(booking) {
+    if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
+        console.warn("EmailJS is not configured. Skipping new booking email alerts.");
+        return;
+    }
+
+    if (typeof emailjs === 'undefined') {
+        console.error("EmailJS SDK not found. Cannot send new booking email.");
+        return;
+    }
+
+    try {
+        const storeParams = {
+            to_email: "littlemagic.official2025@gmail.com", // Shop's email
+            to_name: "แอดมิน Little Magic",
+            booking_code: booking.bookingCode,
+            status_text: "มีคิวจองใหม่เข้ามา (รออนุมัติ)",
+            status_detail: `คุณ ${booking.name} ได้จองคิวเข้ามาใหม่ในระบบ กรุณาตรวจสอบข้อมูลและกดยืนยันคิวในระบบหลังบ้าน`,
+            date: formatThaiDate(booking.date),
+            time: booking.time,
+            players: booking.players,
+            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            price: booking.totalPrice
+        };
+
+        await emailjs.send(
+            window.emailConfig.serviceId,
+            window.emailConfig.templateId,
+            storeParams
+        );
+        console.log("New booking alert email sent to shop.");
+    } catch (error) {
+        console.error("Failed to send new booking alert email to shop:", error);
     }
 }
 

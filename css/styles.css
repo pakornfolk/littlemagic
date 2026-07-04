@@ -600,6 +600,7 @@ a.stat-card:hover .stat-info h3 {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0; /* Prevents container overflow in flex/grid items */
 }
 
 .form-group label {
@@ -618,6 +619,8 @@ a.stat-card:hover .stat-info h3 {
 .form-input,
 .form-select {
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 12px 16px;
     border: 1.5px solid var(--color-border);
     border-radius: var(--border-radius-sm);
@@ -627,6 +630,13 @@ a.stat-card:hover .stat-info h3 {
     color: var(--color-primary-dark);
     outline: none;
     transition: var(--transition-smooth);
+}
+
+/* Ensure date input behaves consistently across mobile/desktop browsers */
+input[type="date"].form-input {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 48px;
 }
 
 .form-input:focus,

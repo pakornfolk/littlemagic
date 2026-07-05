@@ -319,7 +319,7 @@ function showBookingSuccess(booking) {
             <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
                 <i class="fas fa-exclamation-triangle" style="margin-top: 2.5px;"></i>
                 <div>
-                    <strong>ข้อแนะนำเกี่ยวกับอีเมล:</strong> หากไม่พบอีเมลยืนยันการจองในกล่องจดหมายปกติ โปรดตรวจสอบในกล่อง <strong>"จดหมายขยะ (Spam)"</strong> นะครับ
+                    <strong>ข้อแนะนำเกี่ยวกับอีเมล:</strong> หากไม่พบอีเมลยืนยันการจองในกล่องจดหมายปกติ โปรดตรวจสอบในกล่อง <strong>"จดหมายขยะ (Spam)"</strong> หรือสอบถามสถานะการจองทางไลน์ ได้เลยครับ
                 </div>
             </div>
             

@@ -463,10 +463,6 @@ async function sendStatusEmailNotification(booking, newStatus) {
                 statusTextTh = "ยืนยันการจองเรียบร้อยแล้ว";
                 statusDetailTh = "ร้าน Little Magic ได้ยืนยันคิวของคุณแล้ว กรุณาเดินทางมาถึงก่อนเวลานัด 5-10 นาทีนะครับ";
                 break;
-            case 'active':
-                statusTextTh = "เช็คอินเข้าโต๊ะกำลังเล่น";
-                statusDetailTh = "คิวของคุณเริ่มเล่นบอร์ดเกมแล้ว ขอให้สนุกกับเวลาพิเศษนี้นะครับ!";
-                break;
             case 'cancelled':
                 statusTextTh = "ยกเลิกคิวแล้ว";
                 statusDetailTh = "คิวการจองนี้ถูกยกเลิกแล้ว หากไม่ใช่การดำเนินการของคุณ โปรดติดต่อทางร้านผ่าน Line ID: @843audre";

@@ -717,14 +717,14 @@ input[type="date"].form-input {
 }
 
 .price-details h4 {
-    font-size: 14px;
-    color: var(--color-primary);
-    font-weight: 500;
+    font-size: 15px;
+    color: var(--color-primary-dark);
+    font-weight: 600;
 }
 
 .price-details p {
     font-size: 12px;
-    color: var(--color-primary-light);
+    color: var(--color-primary);
 }
 
 .price-tag {

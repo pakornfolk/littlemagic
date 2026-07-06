@@ -6,8 +6,12 @@
     let dbMode = 'local';
     let db = null;
 
-    // Check if configuration exists and is active
-    if (window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    // Check if configuration exists, is active, and is NOT a local testing environment
+    const isLocalTest = window.location.hostname === "localhost" || 
+                        window.location.hostname === "127.0.0.1" || 
+                        window.location.protocol === "file:";
+
+    if (!isLocalTest && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
         try {
             // firebase is loaded globally via compat scripts in HTML
             if (typeof firebase !== 'undefined') {
@@ -24,7 +28,11 @@
             dbMode = 'local';
         }
     } else {
-        console.log("Little Magic DB: Running in Local Storage Mode (Offline).");
+        if (isLocalTest) {
+            console.log("Little Magic DB: Local environment detected. Forcing Local Storage Mode for testing.");
+        } else {
+            console.log("Little Magic DB: Running in Local Storage Mode (Offline).");
+        }
         dbMode = 'local';
     }
 
@@ -190,7 +198,7 @@
         if (!isCancelable(bookingToCancel.date, bookingToCancel.time)) {
             return { 
                 success: false, 
-                message: 'ไม่สามารถยกเลิกได้ เนื่องจากเหลือน้อยกว่า 1 วัน (24 ชั่วโมง) ก่อนเริ่มจอง หากต้องการยกเลิกโปรดติดต่อทางไลน์' 
+                message: 'ไม่สามารถยกเลิกได้ เนื่องจากเหลือเวลาน้อยกว่า 1 วัน (24 ชั่วโมง) หากต้องการยกเลิกโปรดติดต่อทางไลน์' 
             };
         }
 

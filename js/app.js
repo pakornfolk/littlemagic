@@ -33,6 +33,16 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Failed to initialize EmailJS on client:", e);
         }
     }
+
+    // Clean up mock booking if it exists in local storage
+    const localData = localStorage.getItem("lm_bookings");
+    if (localData) {
+        let currentBookings = JSON.parse(localData);
+        const filtered = currentBookings.filter(b => b.bookingCode !== 'LM-99999');
+        if (filtered.length !== currentBookings.length) {
+            localStorage.setItem("lm_bookings", JSON.stringify(filtered));
+        }
+    }
 });
 
 // 1. Toast Notification Helper
@@ -44,17 +54,17 @@ function showToast(message, type = 'info') {
         container.className = 'toast-container';
         document.body.appendChild(container);
     }
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
+
     let icon = 'info-circle';
     if (type === 'success') icon = 'check-circle';
     if (type === 'error') icon = 'exclamation-triangle';
-    
+
     toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
     container.appendChild(toast);
-    
+
     // Auto-remove toast after 4 seconds
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -67,15 +77,15 @@ function showToast(message, type = 'info') {
 function initTabs() {
     const tabButtons = document.querySelectorAll(".tab-btn");
     const tabContents = document.querySelectorAll(".tab-content");
-    
+
     tabButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             const targetTab = btn.dataset.tab;
-            
+
             // Toggle active buttons
             tabButtons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            
+
             // Toggle active contents
             tabContents.forEach(content => {
                 content.classList.remove("active");
@@ -121,7 +131,7 @@ function initBookingForm() {
             toggleDurationField(radio.value);
             calculatePrice();
         });
-        
+
         radio.addEventListener("change", () => {
             roomCards.forEach(c => c.classList.remove("selected"));
             card.classList.add("selected");
@@ -145,12 +155,12 @@ function initBookingForm() {
     function calculatePrice() {
         const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
         if (!selectedRadio) return 0;
-        
+
         const val = selectedRadio.value;
         const players = parseInt(inputPlayers.value) || 1;
-        
+
         let pricePerPerson = 0;
-        
+
         if (val === 'regular_hourly') {
             const hours = parseInt(inputDuration.value) || 1;
             pricePerPerson = hours * RATE_REGULAR_HOUR;
@@ -162,7 +172,7 @@ function initBookingForm() {
         } else if (val === 'private_daily') {
             pricePerPerson = RATE_PRIVATE_DAY;
         }
-        
+
         const total = pricePerPerson * players;
         priceDisplay.textContent = total.toLocaleString();
         return total;
@@ -174,7 +184,7 @@ function initBookingForm() {
         inputPlayers.addEventListener("change", calculatePrice);
         inputPlayers.addEventListener("input", calculatePrice);
     }
-    
+
     // Bind date change to private room availability check and Thursday block
     if (inputDate) {
         inputDate.addEventListener("change", () => {
@@ -183,7 +193,7 @@ function initBookingForm() {
                 const dayOfWeek = new Date(dateVal).getDay(); // 0 is Sunday, 4 is Thursday
                 if (dayOfWeek === 4) {
                     showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
-                    
+
                     // Revert to today (or tomorrow if today is Thursday)
                     const tObj = new Date();
                     const tStr = tObj.toISOString().split("T")[0];
@@ -201,18 +211,18 @@ function initBookingForm() {
             updatePrivateRoomAvailability(cachedBookings);
         });
     }
-    
+
     // Handle form submit
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
+
         const name = document.getElementById("booking-name").value.trim();
         const phone = document.getElementById("booking-phone").value.trim();
         const email = document.getElementById("booking-email").value.trim();
         const players = inputPlayers.value;
         const date = inputDate.value;
         const time = document.getElementById("booking-time").value;
-        
+
         // Thursday block validation
         if (date) {
             const dayOfWeek = new Date(date).getDay();
@@ -221,7 +231,7 @@ function initBookingForm() {
                 return;
             }
         }
-        
+
         // Opening Hours validation (15:00 - 24:00)
         if (time) {
             const [hours, minutes] = time.split(":").map(Number);
@@ -230,23 +240,23 @@ function initBookingForm() {
                 return;
             }
         }
-        
+
         const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
         if (!selectedRadio) {
             showToast("กรุณาเลือกพื้นที่บริการ", "error");
             return;
         }
-        
+
         const val = selectedRadio.value;
         const roomType = val.startsWith('private') ? 'private' : 'regular';
         const duration = val.endsWith('daily') ? 'day' : inputDuration.value;
-        
+
         // Simple validations
         if (!name || !phone || !email || !date || !time) {
             showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
             return;
         }
-        
+
         if (phone.length < 9 || phone.length > 10 || isNaN(phone)) {
             showToast("กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง (9-10 หลัก)", "error");
             return;
@@ -258,16 +268,16 @@ function initBookingForm() {
             showToast("กรุณากรอกอีเมลที่ถูกต้อง", "error");
             return;
         }
- 
+
         const totalPrice = calculatePrice();
-        
+
         try {
             // Set button to loading
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalBtnHtml = submitBtn.innerHTML;
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังจองคิว...';
-            
+
             const booking = await LittleMagicDB.addBooking({
                 name,
                 phone,
@@ -279,13 +289,13 @@ function initBookingForm() {
                 duration,
                 totalPrice
             });
-            
+
             // Show Success Modal/Screen
             showBookingSuccess(booking);
             sendNewBookingEmailToShop(booking); // Alert the store of new booking
             sendPendingBookingEmailToCustomer(booking); // Send confirmation email to customer (pending review)
             form.reset();
-            
+
             // Reset to defaults
             inputDate.value = todayStr;
             document.getElementById("room-regular-hourly").checked = true;
@@ -293,10 +303,10 @@ function initBookingForm() {
             document.querySelector('.room-type-card[for="room-regular-hourly"]').classList.add("selected");
             toggleDurationField("regular_hourly");
             calculatePrice();
-            
+
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnHtml;
-            
+
         } catch (error) {
             console.error("Booking creation failed:", error);
             showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง", "error");
@@ -362,9 +372,9 @@ function showBookingSuccess(booking) {
             <button id="close-success-modal" class="btn btn-primary">ตกลง (ปิดหน้าต่าง)</button>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     document.getElementById("close-success-modal").addEventListener("click", () => {
         modal.remove();
         // Switch user to inquiry tab automatically to see their booking!
@@ -382,23 +392,23 @@ function initBookingLookup() {
     const searchInput = document.getElementById("lookup-search");
     const searchBtn = document.getElementById("lookup-btn");
     const resultsContainer = document.getElementById("lookup-results");
-    
+
     if (!searchBtn || !resultsContainer) return;
-    
+
     searchBtn.addEventListener("click", async () => {
         const query = searchInput.value.trim();
         if (!query) {
             showToast("กรุณากรอกเบอร์โทรศัพท์ หรือรหัสจองคิว", "error");
             return;
         }
-        
+
         resultsContainer.innerHTML = `
             <div style="text-align:center; padding: 30px;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--color-primary);"></i>
                 <p style="margin-top:10px;">กำลังค้นหาข้อมูล...</p>
             </div>
         `;
-        
+
         try {
             const bookings = await LittleMagicDB.searchBookings(query);
             renderLookupResults(bookings, resultsContainer);
@@ -407,7 +417,7 @@ function initBookingLookup() {
             showToast("เกิดข้อผิดพลาดในการค้นหาข้อมูล", "error");
         }
     });
-    
+
     // Press enter in search box
     searchInput.addEventListener("keypress", (e) => {
         if (e.key === 'Enter') {
@@ -429,24 +439,24 @@ function renderLookupResults(bookings, container) {
         `;
         return;
     }
-    
+
     container.innerHTML = '';
-    
+
     bookings.forEach(booking => {
         const card = document.createElement("div");
         card.className = "booking-detail-card";
-        
+
         const isBookingCancelable = LittleMagicDB.isCancelable(booking.date, booking.time) && booking.status !== 'cancelled' && booking.status !== 'completed';
-        
+
         let statusBadge = '';
-        switch(booking.status) {
+        switch (booking.status) {
             case 'pending': statusBadge = '<span class="badge badge-pending"><i class="fas fa-clock"></i> รอการยืนยัน</span>'; break;
             case 'confirmed': statusBadge = '<span class="badge badge-confirmed"><i class="fas fa-check"></i> ยืนยันแล้ว</span>'; break;
             case 'active': statusBadge = '<span class="badge badge-active"><i class="fas fa-dice"></i> กำลังเล่นอยู่</span>'; break;
             case 'completed': statusBadge = '<span class="badge badge-completed"><i class="fas fa-door-open"></i> เล่นเสร็จแล้ว</span>'; break;
             case 'cancelled': statusBadge = '<span class="badge badge-cancelled"><i class="fas fa-times"></i> ยกเลิกแล้ว</span>'; break;
         }
-        
+
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; margin-bottom: 15px;">
                 <h3 style="margin:0; border:none; padding:0; font-size:16px; color:var(--color-primary-dark);">
@@ -493,22 +503,27 @@ function renderLookupResults(bookings, container) {
             ` : ''}
             
             ${!isBookingCancelable && booking.status !== 'cancelled' && booking.status !== 'completed' ? `
-                <div class="cancellation-note" style="background:#FFF8F0; color:#B25E00; border-color: rgba(244,162,97,0.2)">
-                    <i class="fas fa-exclamation-triangle"></i> ไม่สามารถยกเลิกได้ เนื่องจากเหลือน้อยกว่า 1 วัน (24 ชั่วโมง) ก่อนเริ่มจอง หากต้องการยกเลิกโปรดติดต่อทางไลน์
+                <div class="cancellation-note" style="background:#FFF8F0; color:#B25E00; border-color: rgba(244,162,97,0.2); display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px; font-weight: 500;">
+                        <i class="fas fa-exclamation-triangle"></i> ไม่สามารถยกเลิกได้ เนื่องจากเหลือเวลาน้อยกว่า 1 วัน (24 ชั่วโมง)
+                    </span>
+                    <a href="https://line.me/R/ti/p/@843audre" target="_blank" class="btn" style="width: 100%; box-sizing: border-box; height: 42px; padding: 0 16px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-color: #06C755; background: #06C755; color: #FFFFFF; text-decoration: none; margin-top: 4px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s ease;">
+                        <i class="fab fa-line" style="font-size: 20px;"></i> หากต้องการยกเลิก กรุณาติดต่อผ่าน Line
+                    </a>
                 </div>
             ` : ''}
         `;
-        
+
         // Handle Cancel Button event
         const cancelBtn = card.querySelector(".btn-cancel");
         if (cancelBtn) {
             cancelBtn.addEventListener("click", async () => {
                 const confirmCancel = confirm(`คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองคิว รหัส ${booking.bookingCode}?`);
                 if (!confirmCancel) return;
-                
+
                 cancelBtn.disabled = true;
                 cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังยกเลิก...';
-                
+
                 const response = await LittleMagicDB.cancelBooking(booking.id);
                 if (response.success) {
                     showToast(response.message, "success");
@@ -523,7 +538,7 @@ function renderLookupResults(bookings, container) {
                 }
             });
         }
-        
+
         container.appendChild(card);
     });
 }
@@ -533,13 +548,13 @@ function initQueueSubscription() {
     const queueListContainer = document.getElementById("queue-list");
     const activeQueuesCount = document.getElementById("active-queues-count");
     const privateRoomsCount = document.getElementById("private-rooms-count");
-    
+
     if (!queueListContainer) return;
-    
+
     LittleMagicDB.subscribeToBookings((bookings) => {
         // Cache live bookings
         cachedBookings = bookings;
-        
+
         // Update Private Room occupancy on selection cards
         updatePrivateRoomAvailability(bookings);
 
@@ -550,30 +565,30 @@ function initQueueSubscription() {
 
         // We filter queues for TODAY that are active ('pending', 'confirmed', 'active')
         const todayStr = new Date().toISOString().split("T")[0];
-        
+
         // Filter bookings scheduled for today that are not completed/cancelled
-        const activeBookingsToday = bookings.filter(b => 
-            b.date === todayStr && 
+        const activeBookingsToday = bookings.filter(b =>
+            b.date === todayStr &&
             (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active')
         );
-        
+
         // Sort activeBookingsToday by booking time ascending (chronological)
         activeBookingsToday.sort((a, b) => {
             const timeA = a.time.split(":").map(Number);
             const timeB = b.time.split(":").map(Number);
             return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
         });
-        
+
         // Update stats counters
         if (activeQueuesCount) {
             activeQueuesCount.textContent = activeBookingsToday.length;
         }
-        
+
         if (privateRoomsCount) {
             const occupiedCount = bookings.filter(b => b.roomType === 'private' && b.status === 'active').length;
             privateRoomsCount.textContent = `${occupiedCount}/2`;
         }
-        
+
         // Render queues
         if (activeBookingsToday.length === 0) {
             queueListContainer.innerHTML = `
@@ -585,34 +600,34 @@ function initQueueSubscription() {
             `;
             return;
         }
-        
+
         queueListContainer.innerHTML = '';
-        
+
         activeBookingsToday.forEach(booking => {
             const item = document.createElement("div");
             item.className = `queue-item status-${booking.status}`;
-            
+
             let statusText = '';
             let badgeClass = '';
-            switch(booking.status) {
-                case 'pending': 
-                    statusText = 'รอร้านยืนยัน'; 
-                    badgeClass = 'badge-pending'; 
+            switch (booking.status) {
+                case 'pending':
+                    statusText = 'รอร้านยืนยัน';
+                    badgeClass = 'badge-pending';
                     break;
-                case 'confirmed': 
-                    statusText = 'ยืนยันคิวแล้ว'; 
-                    badgeClass = 'badge-confirmed'; 
+                case 'confirmed':
+                    statusText = 'ยืนยันคิวแล้ว';
+                    badgeClass = 'badge-confirmed';
                     break;
-                case 'active': 
-                    statusText = 'กำลังเล่นอยู่'; 
-                    badgeClass = 'badge-active'; 
+                case 'active':
+                    statusText = 'กำลังเล่นอยู่';
+                    badgeClass = 'badge-active';
                     break;
             }
-            
-            const areaBadge = booking.roomType === 'private' 
-                ? '<span class="badge badge-room private"><i class="fas fa-door-closed"></i> ห้อง Private</span>' 
+
+            const areaBadge = booking.roomType === 'private'
+                ? '<span class="badge badge-room private"><i class="fas fa-door-closed"></i> ห้อง Private</span>'
                 : '<span class="badge badge-room"><i class="fas fa-couch"></i> โซนปกติ</span>';
-                
+
             item.innerHTML = `
                 <div class="queue-meta">
                     <div class="queue-title">${maskName(booking.name)}</div>
@@ -626,7 +641,7 @@ function initQueueSubscription() {
                     ${areaBadge}
                 </div>
             `;
-            
+
             queueListContainer.appendChild(item);
         });
     });
@@ -640,7 +655,7 @@ function displayDatabaseMode() {
         banner.id = "db-mode-banner";
         document.body.insertBefore(banner, document.body.firstChild);
     }
-    
+
     if (LittleMagicDB.dbMode === 'firebase') {
         banner.className = "db-mode-banner firebase-active";
         banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์`;
@@ -679,30 +694,30 @@ function getDurationText(duration) {
 function updatePrivateRoomAvailability(bookings) {
     const inputDate = document.getElementById("booking-date");
     if (!inputDate) return;
-    
+
     const selectedDate = inputDate.value;
     const todayStr = new Date().toISOString().split("T")[0];
-    
+
     // Count active private rooms today
     const activePrivateCount = bookings.filter(b => b.roomType === 'private' && b.status === 'active').length;
     const availablePrivateRooms = Math.max(0, 2 - activePrivateCount);
-    
+
     const hourlyCard = document.querySelector('.room-type-card[for="room-private-hourly"]');
     const dailyCard = document.querySelector('.room-type-card[for="room-private-daily"]');
-    
+
     const hourlyRadio = document.getElementById("room-private-hourly");
     const dailyRadio = document.getElementById("room-private-daily");
-    
+
     const regularHourlyRadio = document.getElementById("room-regular-hourly");
     const regularHourlyCard = document.querySelector('.room-type-card[for="room-regular-hourly"]');
-    
+
     const occupancyTexts = document.querySelectorAll(".private-occupancy-text");
-    
+
     if (selectedDate === todayStr && availablePrivateRooms === 0) {
         occupancyTexts.forEach(el => {
             el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (0/2)</span>`;
         });
-        
+
         if (hourlyCard) {
             hourlyCard.style.opacity = "0.5";
             hourlyCard.style.pointerEvents = "none";
@@ -713,7 +728,7 @@ function updatePrivateRoomAvailability(bookings) {
             dailyCard.style.pointerEvents = "none";
             dailyCard.style.cursor = "not-allowed";
         }
-        
+
         // If Private is selected, auto-select Regular Hourly
         if (hourlyRadio && dailyRadio && (hourlyRadio.checked || dailyRadio.checked)) {
             regularHourlyRadio.checked = true;
@@ -721,14 +736,14 @@ function updatePrivateRoomAvailability(bookings) {
             if (regularHourlyCard) {
                 regularHourlyCard.classList.add("selected");
             }
-            
+
             const inputDuration = document.getElementById("booking-duration");
             const durationDayText = document.getElementById("booking-duration-day-text");
             if (inputDuration && durationDayText) {
                 inputDuration.style.display = "block";
                 durationDayText.style.display = "none";
             }
-            
+
             // Recalculate price
             const priceDisplay = document.getElementById("estimated-price");
             const inputPlayers = document.getElementById("booking-players");
@@ -747,7 +762,7 @@ function updatePrivateRoomAvailability(bookings) {
                 el.innerHTML = `<span style="color: var(--color-primary); font-weight: 500;"><i class="far fa-check-circle"></i> จองล่วงหน้าได้ (ว่าง 2/2)</span>`;
             }
         });
-        
+
         if (hourlyCard) {
             hourlyCard.style.opacity = "1";
             hourlyCard.style.pointerEvents = "auto";
@@ -763,6 +778,11 @@ function updatePrivateRoomAvailability(bookings) {
 
 // Send Email notifications when a customer cancels a booking
 async function sendCancellationEmails(booking) {
+    if (LittleMagicDB.dbMode !== 'firebase') {
+        console.log("Offline local mode detected. Skipping cancellation email alerts to save credits.");
+        return;
+    }
+
     if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
         console.warn("EmailJS is not configured. Skipping cancellation email alerts.");
         return;
@@ -828,6 +848,11 @@ async function sendCancellationEmails(booking) {
 
 // Send notification to the store's email when a new booking is created
 async function sendNewBookingEmailToShop(booking) {
+    if (LittleMagicDB.dbMode !== 'firebase') {
+        console.log("Offline local mode detected. Skipping new booking email alerts to save credits.");
+        return;
+    }
+
     if (!window.emailConfig || !window.emailConfig.publicKey || window.emailConfig.publicKey === "YOUR_EMAILJS_PUBLIC_KEY") {
         console.warn("EmailJS is not configured. Skipping new booking email alerts.");
         return;
@@ -865,6 +890,10 @@ async function sendNewBookingEmailToShop(booking) {
 
 // Send notification to the customer's email when a new booking is created (Pending approval status)
 async function sendPendingBookingEmailToCustomer(booking) {
+    if (LittleMagicDB.dbMode !== 'firebase') {
+        return;
+    }
+
     if (!booking.email) {
         console.log("No email address provided. Skipping pending email notification to customer.");
         return;
@@ -916,7 +945,7 @@ function initScheduleTab() {
     const todayObj = new Date();
     const todayStr = todayObj.toISOString().split("T")[0];
     scheduleDateInput.min = todayStr;
-    
+
     if (todayObj.getDay() === 4) { // Thursday
         const tomorrowObj = new Date();
         tomorrowObj.setDate(tomorrowObj.getDate() + 1);
@@ -932,7 +961,7 @@ function initScheduleTab() {
             const dayOfWeek = new Date(dateVal).getDay(); // 4 is Thursday
             if (dayOfWeek === 4) {
                 showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
-                
+
                 // Revert to today (or tomorrow if today is Thursday)
                 const tObj = new Date();
                 const tStr = tObj.toISOString().split("T")[0];
@@ -955,13 +984,13 @@ function initScheduleTab() {
 function renderSchedule() {
     const scheduleDateInput = document.getElementById("schedule-date");
     if (!scheduleDateInput) return;
-    
+
     const selectedDate = scheduleDateInput.value;
     if (!selectedDate) return;
 
     // Filter active bookings (pending, confirmed, active) for selectedDate
-    const activeBookings = cachedBookings.filter(b => 
-        b.date === selectedDate && 
+    const activeBookings = cachedBookings.filter(b =>
+        b.date === selectedDate &&
         (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active')
     );
 
@@ -1009,7 +1038,7 @@ function renderSchedule() {
             // Clear any inline styles to let CSS classes take over
             vibeBadge.style.backgroundColor = "";
             vibeBadge.style.color = "";
-            
+
             if (bookingCount < 2) {
                 vibeBadge.className = "badge badge-active";
             } else if (bookingCount <= 3) {
@@ -1019,7 +1048,7 @@ function renderSchedule() {
             } else {
                 vibeBadge.className = "badge badge-cancelled";
             }
-            
+
             vibeText.textContent = descTxt;
             vibeGaugeFill.className = `vibe-gauge-fill ${levelClass}`;
             vibeGaugeFill.style.width = widthPct;
@@ -1095,7 +1124,7 @@ function renderSchedule() {
 
     privateBookings.forEach(booking => {
         const { startSlot, endSlot } = getBookingSlotRange(booking);
-        
+
         // Try row 1 first
         let fitsPrivate1 = true;
         for (let i = startSlot; i < endSlot; i++) {
@@ -1171,7 +1200,7 @@ function renderSchedule() {
                 block.className = `time-block ${statusClass}`;
                 block.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
                 block.title = `จองแล้ว: ${booking.time} - ${endTimeStr} น. (คุณ ${maskName(booking.name)} - ${statusName})`;
-                
+
                 // Show text inside the bar: e.g. "18:00 - 20:00"
                 const spanColumns = endSlot - startSlot;
                 if (spanColumns >= 2) {
@@ -1179,7 +1208,7 @@ function renderSchedule() {
                 } else {
                     block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">จอง</span>`;
                 }
-                
+
                 rowElement.appendChild(block);
             } else {
                 // Free slot (spans 1 column)
@@ -1189,12 +1218,12 @@ function renderSchedule() {
                 block.style.gridColumn = `${i + 1}`;
                 block.title = `เวลา ${slotTimeStr} น. (ว่าง - คลิกเพื่อจองเลย)`;
                 block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">ว่าง</span>`;
-                
+
                 const currentSlotTime = slotTimeStr;
                 block.addEventListener("click", () => {
                     handleQuickBook(selectedDate, currentSlotTime, zoneType);
                 });
-                
+
                 rowElement.appendChild(block);
                 i++;
             }
@@ -1304,7 +1333,7 @@ function handleQuickBook(date, time, zone) {
     if (radio) {
         radio.checked = true;
         radio.dispatchEvent(new Event('change'));
-        
+
         // Update styled selected class on cards
         const roomCards = document.querySelectorAll(".room-type-card");
         roomCards.forEach(c => c.classList.remove("selected"));

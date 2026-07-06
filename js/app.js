@@ -540,25 +540,25 @@ function showBookingSuccess(booking) {
     const modal = document.createElement("div");
     modal.className = "admin-login-overlay"; // Reuse overlay style
     modal.style.position = "fixed";
+    
+    const lineUrl = `https://line.me/R/oaMessage/@843audre/?${encodeURIComponent(
+        `สวัสดีครับ ต้องการยืนยันการจองคิว\nรหัสจอง: ${booking.bookingCode}\nผู้จอง: คุณ ${booking.name}\nวันที่เล่น: ${formatThaiDate(booking.date)}\nเวลา: ${booking.time} น. (${getDurationText(booking.duration)})\nพื้นที่: ${booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}\nจำนวนผู้เล่น: ${booking.players} คน`
+    )}`;
+
     modal.innerHTML = `
         <div class="admin-login-box" style="max-width: 480px; text-align: left;">
             <div style="text-align: center; margin-bottom: 20px; color: var(--color-status-active);">
                 <i class="fas fa-check-circle" style="font-size: 56px;"></i>
                 <h2 style="margin-top: 15px; color: var(--color-primary-dark);">จองคิวสำเร็จ (รอการยืนยัน)</h2>
-                <p style="color: var(--color-primary); font-size: 13px; margin-top: 4px;">กรุณากดส่งข้อมูลยืนยันตัวตนทาง LINE ด้านล่างเพื่อให้ร้านอนุมัติคิวจอง</p>
+                <p style="color: var(--color-primary); font-size: 13px; margin-top: 4px;">
+                    ระบบกำลังนำคุณไปยัง LINE ใน <strong id="redirect-timer" style="color: var(--color-accent-magic); font-size: 16px;">5</strong> วินาที...
+                </p>
             </div>
             
-            <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 12px; display: flex; gap: 8px; align-items: flex-start;">
+            <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
                 <i class="fas fa-exclamation-triangle" style="margin-top: 2.5px;"></i>
                 <div>
-                    <strong>โปรดทราบ:</strong> ท่านจำเป็นต้องกดส่งรายละเอียดการจองนี้ไปที่ LINE OA ของร้าน เพื่อให้แอดมินตรวจสอบและ<strong>ทำการอนุมัติสิทธิ์จองคิว</strong>ให้เสร็จสมบูรณ์ค่ะ
-                </div>
-            </div>
-
-            <div style="background: #F4F8FB; border: 1px dashed var(--color-status-confirmed); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #0056B3; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
-                <i class="fas fa-envelope" style="margin-top: 2.5px;"></i>
-                <div>
-                    <strong>คำแนะนำเกี่ยวกับอีเมล:</strong> ระบบได้ส่งรายละเอียดจองคิวเข้าระบบอีเมลของท่านแล้ว หากไม่ได้รับ โปรดตรวจสอบกล่อง <strong>"จดหมายขยะ (Spam)"</strong> ของท่านนะคะ
+                    <strong>โปรดทราบ:</strong> ท่านจำเป็นต้องส่งรายละเอียดการจองนี้ไปที่ LINE OA เพื่อให้แอดมินตรวจสอบและ<strong>ทำการอนุมัติสิทธิ์จองคิว</strong>ให้เสร็จสมบูรณ์ค่ะ
                 </div>
             </div>
             
@@ -604,9 +604,7 @@ function showBookingSuccess(booking) {
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <a href="https://line.me/R/oaMessage/@843audre/?${encodeURIComponent(
-                    `สวัสดีครับ ต้องการยืนยันการจองคิว\nรหัสจอง: ${booking.bookingCode}\nผู้จอง: คุณ ${booking.name}\nวันที่เล่น: ${formatThaiDate(booking.date)}\nเวลา: ${booking.time} น. (${getDurationText(booking.duration)})\nพื้นที่: ${booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private' : 'โซนปกติ')}\nจำนวนผู้เล่น: ${booking.players} คน`
-                )}" target="_blank" id="confirm-line-btn" class="btn" style="background-color: #06C755; color: white; width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 50px; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); text-align: center;">
+                <a href="${lineUrl}" target="_blank" id="confirm-line-btn" class="btn" style="background-color: #06C755; color: white; width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 50px; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); text-align: center;">
                     <i class="fab fa-line" style="font-size: 22px;"></i> ส่งข้อความยืนยันคิวผ่าน LINE ทันที
                 </a>
             </div>
@@ -615,8 +613,33 @@ function showBookingSuccess(booking) {
 
     document.body.appendChild(modal);
 
+    // Setup auto-redirect countdown (5 seconds)
+    let secondsLeft = 5;
+    const timerSpan = document.getElementById("redirect-timer");
+    
+    const redirectTimer = setInterval(() => {
+        secondsLeft--;
+        if (timerSpan) timerSpan.innerText = secondsLeft;
+        
+        if (secondsLeft <= 0) {
+            clearInterval(redirectTimer);
+            // Perform redirect in the same window to prevent popup blockers
+            window.location.href = lineUrl;
+            
+            // Clean up modal and switch UI behind the scenes
+            modal.remove();
+            const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
+            if (lookupTabBtn) {
+                lookupTabBtn.click();
+                document.getElementById("lookup-search").value = booking.phone;
+                document.getElementById("lookup-btn").click();
+            }
+        }
+    }, 1000);
+
+    // If user clicks manually, clear timer and close modal instantly (opens LINE in new window as target="_blank")
     document.getElementById("confirm-line-btn").addEventListener("click", () => {
-        // Delay closing slightly so browser redirect opens and doesn't get blocked
+        clearInterval(redirectTimer);
         setTimeout(() => {
             modal.remove();
             // Switch user to inquiry tab automatically to see their booking!

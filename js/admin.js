@@ -4,8 +4,8 @@
 
 // Globals and APIs loaded from window.LittleMagicDB, window.showToast, window.formatThaiDate
 
-const ADMIN_EMAIL = "littlemagic.official2025@gmail.com";
-const ADMIN_PASSWORD = "admin1234";
+const ADMIN_EMAIL = "littlemagicth@gmail.com";
+const ADMIN_PASSWORD = "Chokchai440";
 let allBookings = [];
 let currentFilter = "all";
 

@@ -25,7 +25,7 @@ window.firebaseConfig = {
 window.emailConfig = {
     publicKey: "J-tvuQR43L3ydZYl1",   // Replace with your Public Key
     serviceId: "service_88p1ugq",   // Replace with your Service ID
-    templateId: "template_f0viwvj"  // Replace with your Template ID
+    templateId: "template_y11pf7a"  // Replace with your Template ID
 };
 
 /**

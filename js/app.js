@@ -362,7 +362,7 @@ function initBookingForm() {
 
         const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
         if (activeMode !== 'dnd' && !selectedRadio) {
-            showToast("กรุณาเลือกพื้นที่บริการ", "error");
+            showToast("กรุณาเลือกรูปแบบห้อง/โซน", "error");
             return;
         }
 
@@ -542,7 +542,7 @@ function showBookingSuccess(booking) {
     modal.style.position = "fixed";
     
     const lineUrl = `https://line.me/R/oaMessage/@843audre/?${encodeURIComponent(
-        `สวัสดีครับ ต้องการยืนยันการจองคิว\nรหัสจอง: ${booking.bookingCode}\nผู้จอง: คุณ ${booking.name}\nวันที่เล่น: ${formatThaiDate(booking.date)}\nเวลา: ${booking.time} น. (${getDurationText(booking.duration)})\nพื้นที่: ${booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}\nจำนวนผู้เล่น: ${booking.players} คน`
+        `สวัสดีครับ/ค่ะ ต้องการยืนยันการจองคิว\nรหัสจอง: ${booking.bookingCode}\nผู้จอง: คุณ ${booking.name}\nวันที่เล่น: ${formatThaiDate(booking.date)}\nเวลา: ${booking.time} น. (${getDurationText(booking.duration)})\nห้อง/โซน: ${booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}\nจำนวนผู้เล่น: ${booking.players} คน`
     )}`;
 
     modal.innerHTML = `
@@ -580,7 +580,7 @@ function showBookingSuccess(booking) {
                     <span>${booking.email || '-'}</span>
                 </div>
                 <div class="booking-detail-row">
-                    <span>พื้นที่ / ห้อง</span>
+                    <span>ห้อง / โซน</span>
                     <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
                 </div>
                 ${booking.roomType === 'dnd' && booking.dndPlayStyle ? `
@@ -736,7 +736,7 @@ function renderLookupResults(bookings, container) {
                 <span>${booking.name}</span>
             </div>
             <div class="booking-detail-row">
-                <span>พื้นที่ / ห้อง</span>
+                <span>ห้อง / โซน</span>
                 <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
             </div>
             ${booking.roomType === 'dnd' && booking.dndPlayStyle ? `
@@ -1563,7 +1563,7 @@ function renderScheduleSection(type) {
                     <span>${booking.time} น. (${getDurationText(booking.duration)})</span>
                 </div>
                 <div class="masked-card-row">
-                    <span>พื้นที่บริการ</span>
+                    <span>ห้อง / โซน</span>
                     <span>${areaName}</span>
                 </div>
                 <div class="masked-card-row">

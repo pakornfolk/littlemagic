@@ -211,9 +211,13 @@ function renderAdminDashboard() {
             case 'cancelled': statusBadge = '<span class="badge badge-cancelled">ยกเลิก</span>'; break;
         }
         
-        const areaBadge = booking.roomType === 'private'
-            ? '<span class="badge badge-room private">Private</span>'
-            : '<span class="badge badge-room">Regular</span>';
+        let areaBadge = '<span class="badge badge-room">Regular</span>';
+        if (booking.roomType === 'private') {
+            areaBadge = '<span class="badge badge-room private">Private</span>';
+        } else if (booking.roomType === 'dnd') {
+            const dmLabel = booking.dndDmRequest === 'yes' ? 'D&D (DM ร้าน)' : 'D&D (DM เอง)';
+            areaBadge = `<span class="badge badge-room dnd" style="background-color: #582C83; color: white;">${dmLabel}</span>`;
+        }
             
         // Construct Action Buttons
         let actionButtons = '';
@@ -428,7 +432,7 @@ function requestNotificationPermission() {
 // Trigger a native browser notification on desktop
 function triggerDesktopNotification(booking) {
     if ("Notification" in window && Notification.permission === "granted") {
-        const area = booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)';
+        const area = booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)');
         const title = `🎲 Little Magic - คิวจองใหม่เข้ามา!`;
         const options = {
             body: `คุณ ${booking.name} ได้จองคิววันที่ ${formatThaiDate(booking.date)} เวลา ${booking.time} น. (${area})`,
@@ -480,7 +484,7 @@ async function sendStatusEmailNotification(booking, newStatus) {
             date: formatThaiDate(booking.date),
             time: booking.time,
             players: booking.players,
-            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            room_type: booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
             price: booking.totalPrice
         };
 

@@ -180,6 +180,31 @@
                                         style="font-size: 11px; margin-top: 6px; color: var(--color-primary);">
                                         กำลังคำนวณห้องว่าง...</div>
                                 </label>
+
+                                <!-- Private DnD Card -->
+                                <label class="room-type-card" for="room-private-dnd">
+                                    <input type="radio" id="room-private-dnd" name="roomSelect" value="private_dnd">
+                                    <div class="room-card-title"><i class="fas fa-dice-d20"></i> ห้อง Private D&D</div>
+                                    <div class="room-card-price">250 บาท / คน (เล่นเป็นรอบ)</div>
+                                    <div class="room-card-occupancy private-occupancy-text"
+                                        style="font-size: 11px; margin-top: 6px; color: var(--color-primary);">
+                                        กำลังคำนวณห้องว่าง...</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic D&D Options (hidden by default) -->
+                        <div id="dnd-options-wrapper" style="display: none; margin-top: 15px; margin-bottom: 20px; padding: 16px; background-color: var(--color-bg-secondary); border: 1.5px dashed var(--color-primary-light); border-radius: var(--border-radius-sm);">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label style="font-weight: 600; margin-bottom: 8px;"><i class="fas fa-user-shield"></i> บริการ Dungeon Master (DM) ของร้าน</label>
+                                <div style="display: flex; gap: 24px; align-items: center; margin-top: 4px;">
+                                    <label style="font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <input type="radio" id="dnd-dm-no" name="dndDmSelect" value="no" checked style="width: auto;"> นำ DM มาเอง
+                                    </label>
+                                    <label style="font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <input type="radio" id="dnd-dm-yes" name="dndDmSelect" value="yes" style="width: auto;"> ต้องการ DM ของร้าน (+1,500 บาท)
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -189,7 +214,7 @@
                                 <input type="date" id="booking-date" class="form-input" required>
                                 <span style="font-size: 11px; color: var(--color-status-cancelled); margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-circle"></i> ร้านหยุดให้บริการทุกวันพฤหัสบดี</span>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="booking-time-wrapper">
                                 <label for="booking-time"><i class="far fa-clock"></i> เวลาเช็คอินเข้าร้าน</label>
                                 <select id="booking-time" class="form-select" required>
                                     <option value="15:00">15:00 น.</option>
@@ -209,6 +234,14 @@
                                     <option value="22:00">22:00 น.</option>
                                     <option value="22:30">22:30 น.</option>
                                     <option value="23:00">23:00 น.</option>
+                                </select>
+                            </div>
+                            <!-- D&D Session Block Selector (hidden by default) -->
+                            <div class="form-group" id="booking-dnd-session-wrapper" style="display: none;">
+                                <label for="booking-dnd-session"><i class="fas fa-history"></i> รอบเวลาเล่น D&D</label>
+                                <select id="booking-dnd-session" class="form-select">
+                                    <option value="14:00-18:00">รอบบ่าย (14:00 - 18:00 น.)</option>
+                                    <option value="19:00-23:00">รอบค่ำ (19:00 - 23:00 น.)</option>
                                 </select>
                             </div>
                         </div>

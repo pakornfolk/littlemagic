@@ -121,13 +121,14 @@
             phone: bookingData.phone,
             email: bookingData.email || "", // Store email
             players: parseInt(bookingData.players),
-            roomType: bookingData.roomType, // 'regular' or 'private'
+            roomType: bookingData.roomType, // 'regular', 'private', or 'dnd'
             date: bookingData.date,
             time: bookingData.time,
             duration: parseInt(bookingData.duration),
             totalPrice: parseFloat(bookingData.totalPrice),
             status: 'pending', // pending, confirmed, active, completed, cancelled
             bookingCode: bookingCode,
+            dndDmRequest: bookingData.dndDmRequest || "no", // 'yes' or 'no'
             createdAt: new Date().toISOString()
         };
 

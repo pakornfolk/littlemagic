@@ -10,6 +10,11 @@ const RATE_REGULAR_DAY = 150;  // 150 THB per day per person
 const RATE_PRIVATE_HOUR = 60;  // 60 THB per hour per person
 const RATE_PRIVATE_DAY = 250;  // 250 THB per day per person
 
+// TODO: Confirm if D&D price is 250 THB per person or per group. Currently set to 250 THB per person.
+const RATE_DND_PLAY = 250;
+// TODO: Confirm DM session fee. Currently set to 1500 THB per session.
+const RATE_DND_DM_SESSION = 1500;
+
 // Cache to store live bookings list
 let cachedBookings = [];
 
@@ -140,14 +145,57 @@ function initBookingForm() {
         });
     });
 
-    // Helper to show/hide the duration selection dropdown
+    // Helper to show/hide the duration selection dropdown and adjust UI for D&D
     function toggleDurationField(selectedValue) {
-        if (selectedValue.endsWith('_daily')) {
-            inputDuration.style.display = "none";
-            durationDayText.style.display = "block";
+        const timeWrapper = document.getElementById("booking-time-wrapper");
+        const dndSessionWrapper = document.getElementById("booking-dnd-session-wrapper");
+        const dndOptionsWrapper = document.getElementById("dnd-options-wrapper");
+        const durationWrapper = document.getElementById("duration-wrapper");
+        const timeInput = document.getElementById("booking-time");
+        const dndSessionInput = document.getElementById("booking-dnd-session");
+
+        // TODO: Confirm if D&D should use fixed session blocks or free selection.
+        if (selectedValue === 'private_dnd') {
+            // D&D Mode: Swap check-in time with session blocks, hide duration selector
+            if (timeWrapper) timeWrapper.style.display = "none";
+            if (dndSessionWrapper) dndSessionWrapper.style.display = "block";
+            if (dndOptionsWrapper) dndOptionsWrapper.style.display = "block";
+            if (durationWrapper) durationWrapper.style.display = "none";
+
+            if (timeInput) timeInput.required = false;
+            if (dndSessionInput) dndSessionInput.required = true;
+
+            // Restrict players to 4-6 for D&D
+            if (inputPlayers) {
+                inputPlayers.min = "4";
+                inputPlayers.max = "6";
+                const val = parseInt(inputPlayers.value) || 4;
+                if (val < 4) inputPlayers.value = "4";
+                if (val > 6) inputPlayers.value = "6";
+            }
         } else {
-            inputDuration.style.display = "block";
-            durationDayText.style.display = "none";
+            // Normal Mode: Restore standard inputs
+            if (timeWrapper) timeWrapper.style.display = "block";
+            if (dndSessionWrapper) dndSessionWrapper.style.display = "none";
+            if (dndOptionsWrapper) dndOptionsWrapper.style.display = "none";
+            if (durationWrapper) durationWrapper.style.display = "block";
+
+            if (timeInput) timeInput.required = true;
+            if (dndSessionInput) dndSessionInput.required = false;
+
+            // Restore normal player limits
+            if (inputPlayers) {
+                inputPlayers.min = "2";
+                inputPlayers.max = "20";
+            }
+
+            if (selectedValue.endsWith('_daily')) {
+                inputDuration.style.display = "none";
+                durationDayText.style.display = "block";
+            } else {
+                inputDuration.style.display = "block";
+                durationDayText.style.display = "none";
+            }
         }
     }
 
@@ -160,6 +208,7 @@ function initBookingForm() {
         const players = parseInt(inputPlayers.value) || 1;
 
         let pricePerPerson = 0;
+        let extraDmFee = 0;
 
         if (val === 'regular_hourly') {
             const hours = parseInt(inputDuration.value) || 1;
@@ -171,9 +220,19 @@ function initBookingForm() {
             pricePerPerson = hours * RATE_PRIVATE_HOUR;
         } else if (val === 'private_daily') {
             pricePerPerson = RATE_PRIVATE_DAY;
+        } else if (val === 'private_dnd') {
+            // TODO: Confirm if D&D price is 250 THB per person or per group. Currently set to 250 THB per person.
+            pricePerPerson = RATE_DND_PLAY;
+
+            // Check if DM is requested
+            const selectedDmRadio = document.querySelector('input[name="dndDmSelect"]:checked');
+            if (selectedDmRadio && selectedDmRadio.value === 'yes') {
+                // TODO: Confirm DM session fee. Currently set to flat 1500 THB.
+                extraDmFee = RATE_DND_DM_SESSION;
+            }
         }
 
-        const total = pricePerPerson * players;
+        const total = (pricePerPerson * players) + extraDmFee;
         priceDisplay.textContent = total.toLocaleString();
         return total;
     }
@@ -184,6 +243,12 @@ function initBookingForm() {
         inputPlayers.addEventListener("change", calculatePrice);
         inputPlayers.addEventListener("input", calculatePrice);
     }
+
+    // Bind D&D DM selection changes to price calculation
+    const dndDmRadios = document.querySelectorAll('input[name="dndDmSelect"]');
+    dndDmRadios.forEach(radio => {
+        radio.addEventListener("change", calculatePrice);
+    });
 
     // Bind date change to private room availability check and Thursday block
     if (inputDate) {
@@ -221,7 +286,40 @@ function initBookingForm() {
         const email = document.getElementById("booking-email").value.trim();
         const players = inputPlayers.value;
         const date = inputDate.value;
-        const time = document.getElementById("booking-time").value;
+
+        const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
+        if (!selectedRadio) {
+            showToast("กรุณาเลือกพื้นที่บริการ", "error");
+            return;
+        }
+
+        const val = selectedRadio.value;
+        let roomType = 'regular';
+        if (val === 'private_dnd') {
+            roomType = 'dnd';
+        } else if (val.startsWith('private')) {
+            roomType = 'private';
+        }
+
+        let time = document.getElementById("booking-time").value;
+        let duration = val.endsWith('daily') ? 'day' : inputDuration.value;
+        let dndDmRequest = 'no';
+
+        if (val === 'private_dnd') {
+            const dndSession = document.getElementById("booking-dnd-session").value; // e.g. "14:00-18:00"
+            time = dndSession.split('-')[0]; // "14:00" or "19:00"
+            duration = '4'; // D&D is 4 hours
+
+            const dndDmSelect = document.querySelector('input[name="dndDmSelect"]:checked');
+            dndDmRequest = dndDmSelect ? dndDmSelect.value : 'no';
+
+            // Validate D&D players (4-6)
+            const numPlayers = parseInt(players) || 0;
+            if (numPlayers < 4 || numPlayers > 6) {
+                showToast("ห้อง Private D&D จำกัดจำนวนผู้เล่น 4-6 คนเท่านั้นครับ", "error");
+                return;
+            }
+        }
 
         // Thursday block validation
         if (date) {
@@ -232,24 +330,14 @@ function initBookingForm() {
             }
         }
 
-        // Opening Hours validation (15:00 - 24:00)
-        if (time) {
+        // Opening Hours validation (15:00 - 24:00) - Only for non-D&D
+        if (time && val !== 'private_dnd') {
             const [hours, minutes] = time.split(":").map(Number);
             if (hours < 15) {
                 showToast("ขออภัยครับ ร้านเปิดให้บริการเวลา 15:00 น. - 24:00 น. เท่านั้นครับ", "error");
                 return;
             }
         }
-
-        const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
-        if (!selectedRadio) {
-            showToast("กรุณาเลือกพื้นที่บริการ", "error");
-            return;
-        }
-
-        const val = selectedRadio.value;
-        const roomType = val.startsWith('private') ? 'private' : 'regular';
-        const duration = val.endsWith('daily') ? 'day' : inputDuration.value;
 
         // Simple validations
         if (!name || !phone || !email || !date || !time) {
@@ -287,7 +375,8 @@ function initBookingForm() {
                 date,
                 time,
                 duration,
-                totalPrice
+                totalPrice,
+                dndDmRequest
             });
 
             // Show Success Modal/Screen
@@ -353,7 +442,7 @@ function showBookingSuccess(booking) {
                 </div>
                 <div class="booking-detail-row">
                     <span>พื้นที่ / ห้อง</span>
-                    <span>${booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'}</span>
+                    <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
                 </div>
                 <div class="booking-detail-row">
                     <span>วันที่จอง</span>
@@ -471,7 +560,7 @@ function renderLookupResults(bookings, container) {
             </div>
             <div class="booking-detail-row">
                 <span>พื้นที่ / ห้อง</span>
-                <span>${booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'}</span>
+                <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
             </div>
             <div class="booking-detail-row">
                 <span>วันที่จอง</span>
@@ -585,7 +674,7 @@ function initQueueSubscription() {
         }
 
         if (privateRoomsCount) {
-            const occupiedCount = bookings.filter(b => b.roomType === 'private' && b.status === 'active').length;
+            const occupiedCount = bookings.filter(b => (b.roomType === 'private' || b.roomType === 'dnd') && b.status === 'active').length;
             privateRoomsCount.textContent = `${occupiedCount}/2`;
         }
 
@@ -624,9 +713,12 @@ function initQueueSubscription() {
                     break;
             }
 
-            const areaBadge = booking.roomType === 'private'
-                ? '<span class="badge badge-room private"><i class="fas fa-door-closed"></i> ห้อง Private</span>'
-                : '<span class="badge badge-room"><i class="fas fa-couch"></i> โซนปกติ</span>';
+            let areaBadge = '<span class="badge badge-room"><i class="fas fa-couch"></i> โซนปกติ</span>';
+            if (booking.roomType === 'private') {
+                areaBadge = '<span class="badge badge-room private"><i class="fas fa-door-closed"></i> ห้อง Private</span>';
+            } else if (booking.roomType === 'dnd') {
+                areaBadge = '<span class="badge badge-room dnd" style="background-color: #582C83; color: white;"><i class="fas fa-dice-d20"></i> ห้อง D&D</span>';
+            }
 
             item.innerHTML = `
                 <div class="queue-meta">
@@ -698,15 +790,17 @@ function updatePrivateRoomAvailability(bookings) {
     const selectedDate = inputDate.value;
     const todayStr = new Date().toISOString().split("T")[0];
 
-    // Count active private rooms today
-    const activePrivateCount = bookings.filter(b => b.roomType === 'private' && b.status === 'active').length;
+    // Count active private rooms today (including D&D sessions since they share the same rooms)
+    const activePrivateCount = bookings.filter(b => (b.roomType === 'private' || b.roomType === 'dnd') && b.status === 'active').length;
     const availablePrivateRooms = Math.max(0, 2 - activePrivateCount);
 
     const hourlyCard = document.querySelector('.room-type-card[for="room-private-hourly"]');
     const dailyCard = document.querySelector('.room-type-card[for="room-private-daily"]');
+    const dndCard = document.querySelector('.room-type-card[for="room-private-dnd"]');
 
     const hourlyRadio = document.getElementById("room-private-hourly");
     const dailyRadio = document.getElementById("room-private-daily");
+    const dndRadio = document.getElementById("room-private-dnd");
 
     const regularHourlyRadio = document.getElementById("room-regular-hourly");
     const regularHourlyCard = document.querySelector('.room-type-card[for="room-regular-hourly"]');
@@ -728,9 +822,14 @@ function updatePrivateRoomAvailability(bookings) {
             dailyCard.style.pointerEvents = "none";
             dailyCard.style.cursor = "not-allowed";
         }
+        if (dndCard) {
+            dndCard.style.opacity = "0.5";
+            dndCard.style.pointerEvents = "none";
+            dndCard.style.cursor = "not-allowed";
+        }
 
-        // If Private is selected, auto-select Regular Hourly
-        if (hourlyRadio && dailyRadio && (hourlyRadio.checked || dailyRadio.checked)) {
+        // If Private/D&D is selected, auto-select Regular Hourly
+        if (hourlyRadio && dailyRadio && dndRadio && (hourlyRadio.checked || dailyRadio.checked || dndRadio.checked)) {
             regularHourlyRadio.checked = true;
             document.querySelectorAll(".room-type-card").forEach(c => c.classList.remove("selected"));
             if (regularHourlyCard) {
@@ -772,6 +871,11 @@ function updatePrivateRoomAvailability(bookings) {
             dailyCard.style.opacity = "1";
             dailyCard.style.pointerEvents = "auto";
             dailyCard.style.cursor = "pointer";
+        }
+        if (dndCard) {
+            dndCard.style.opacity = "1";
+            dndCard.style.pointerEvents = "auto";
+            dndCard.style.cursor = "pointer";
         }
     }
 }
@@ -1080,7 +1184,7 @@ function renderSchedule() {
 
     // Calculate booking overlap ranges
     const regularBookings = activeBookings.filter(b => b.roomType === 'regular');
-    const privateBookings = activeBookings.filter(b => b.roomType === 'private');
+    const privateBookings = activeBookings.filter(b => b.roomType === 'private' || b.roomType === 'dnd');
 
     // Helper to calculate slot occupancy [startSlot, endSlot]
     const getBookingSlotRange = (booking) => {

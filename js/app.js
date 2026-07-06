@@ -535,7 +535,7 @@ function initBookingForm() {
     });
 }
 
-// Render booking confirmation overlay modal
+// Perform immediate LINE OA redirect on booking success after showing modal details for 1.5s
 function showBookingSuccess(booking) {
     const modal = document.createElement("div");
     modal.className = "admin-login-overlay"; // Reuse overlay style
@@ -551,14 +551,14 @@ function showBookingSuccess(booking) {
                 <i class="fas fa-check-circle" style="font-size: 56px;"></i>
                 <h2 style="margin-top: 15px; color: var(--color-primary-dark);">จองคิวสำเร็จ (รอการยืนยัน)</h2>
                 <p style="color: var(--color-primary); font-size: 13px; margin-top: 4px;">
-                    ระบบกำลังนำคุณไปยัง LINE ใน <strong id="redirect-timer" style="color: var(--color-accent-magic); font-size: 16px;">5</strong> วินาที...
+                    <i class="fas fa-spinner fa-spin" style="color: var(--color-accent-magic);"></i> กำลังนำคุณไปยัง LINE เพื่อส่งข้อมูลยืนยัน...
                 </p>
             </div>
             
             <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
                 <i class="fas fa-exclamation-triangle" style="margin-top: 2.5px;"></i>
                 <div>
-                    <strong>โปรดทราบ:</strong> ท่านจำเป็นต้องส่งรายละเอียดการจองนี้ไปที่ LINE OA เพื่อให้แอดมินตรวจสอบและ<strong>ทำการอนุมัติสิทธิ์จองคิว</strong>ให้เสร็จสมบูรณ์ค่ะ
+                    <strong>โปรดทราบ:</strong> ระบบจำเป็นต้องส่งรายละเอียดการจองนี้ไปยัง LINE OA ของร้าน เพื่อให้แอดมินอนุมัติสิทธิ์การจองคิวของท่านค่ะ
                 </div>
             </div>
             
@@ -602,55 +602,29 @@ function showBookingSuccess(booking) {
                     <strong style="color: var(--color-primary-dark);">${booking.totalPrice} บาท</strong>
                 </div>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <a href="${lineUrl}" target="_blank" id="confirm-line-btn" class="btn" style="background-color: #06C755; color: white; width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 50px; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); text-align: center;">
-                    <i class="fab fa-line" style="font-size: 22px;"></i> ส่งข้อความยืนยันคิวผ่าน LINE ทันที
-                </a>
-            </div>
         </div>
     `;
 
     document.body.appendChild(modal);
 
-    // Setup auto-redirect countdown (5 seconds)
-    let secondsLeft = 5;
-    const timerSpan = document.getElementById("redirect-timer");
-    
-    const redirectTimer = setInterval(() => {
-        secondsLeft--;
-        if (timerSpan) timerSpan.innerText = secondsLeft;
+    // Auto-redirect after 1.5 seconds (1500 ms)
+    setTimeout(() => {
+        // Perform redirect in the same window
+        window.location.href = lineUrl;
         
-        if (secondsLeft <= 0) {
-            clearInterval(redirectTimer);
-            // Perform redirect in the same window to prevent popup blockers
-            window.location.href = lineUrl;
-            
-            // Clean up modal and switch UI behind the scenes
-            modal.remove();
-            const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
-            if (lookupTabBtn) {
-                lookupTabBtn.click();
-                document.getElementById("lookup-search").value = booking.phone;
-                document.getElementById("lookup-btn").click();
+        // Clean up modal and switch UI behind the scenes
+        modal.remove();
+        const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
+        if (lookupTabBtn) {
+            lookupTabBtn.click();
+            const searchInput = document.getElementById("lookup-search");
+            const searchBtn = document.getElementById("lookup-btn");
+            if (searchInput && searchBtn) {
+                searchInput.value = booking.phone;
+                searchBtn.click();
             }
         }
-    }, 1000);
-
-    // If user clicks manually, clear timer and close modal instantly (opens LINE in new window as target="_blank")
-    document.getElementById("confirm-line-btn").addEventListener("click", () => {
-        clearInterval(redirectTimer);
-        setTimeout(() => {
-            modal.remove();
-            // Switch user to inquiry tab automatically to see their booking!
-            const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
-            if (lookupTabBtn) {
-                lookupTabBtn.click();
-                document.getElementById("lookup-search").value = booking.phone;
-                document.getElementById("lookup-btn").click();
-            }
-        }, 500);
-    });
+    }, 1500);
 }
 
 // 4. Booking Lookup (Check & Cancel Queues)

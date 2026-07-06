@@ -6,19 +6,15 @@
     let dbMode = 'local';
     let db = null;
 
-    // Check if configuration exists, is active, and is NOT a local testing environment
-    const isLocalTest = window.location.hostname === "localhost" || 
-                        window.location.hostname === "127.0.0.1" || 
-                        window.location.protocol === "file:";
-
-    if (!isLocalTest && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    // Check if configuration exists and is active
+    if (window.isFirebaseConfigured && window.isFirebaseConfigured()) {
         try {
             // firebase is loaded globally via compat scripts in HTML
             if (typeof firebase !== 'undefined') {
-                const app = firebase.initializeApp(window.firebaseConfig);
+                const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(window.firebaseConfig);
                 db = firebase.firestore();
                 dbMode = 'firebase';
-                console.log("Little Magic DB: Configured with Firebase Firestore.");
+                console.log("Little Magic DB: Configured with Firebase Firestore (Online Mode).");
             } else {
                 console.warn("Little Magic DB: Firebase script not loaded. Falling back to local storage.");
                 dbMode = 'local';
@@ -28,11 +24,7 @@
             dbMode = 'local';
         }
     } else {
-        if (isLocalTest) {
-            console.log("Little Magic DB: Local environment detected. Forcing Local Storage Mode for testing.");
-        } else {
-            console.log("Little Magic DB: Running in Local Storage Mode (Offline).");
-        }
+        console.log("Little Magic DB: Running in Local Storage Mode (Offline).");
         dbMode = 'local';
     }
 

@@ -114,6 +114,46 @@ function initBookingForm() {
     const priceDisplay = document.getElementById("estimated-price");
     const inputPlayers = document.getElementById("booking-players");
 
+    const modeBtnBoardgame = document.getElementById("mode-boardgame");
+    const modeBtnDnd = document.getElementById("mode-dnd");
+    const roomSelectorGroup = document.getElementById("room-selector-group");
+    let activeMode = 'boardgame';
+
+    if (modeBtnBoardgame && modeBtnDnd) {
+        modeBtnBoardgame.addEventListener("click", () => {
+            modeBtnBoardgame.classList.add("active");
+            modeBtnDnd.classList.remove("active");
+            activeMode = 'boardgame';
+            
+            // Show room selector group
+            if (roomSelectorGroup) roomSelectorGroup.style.display = "block";
+            
+            // Select regular hourly by default
+            const regularHourlyRadio = document.getElementById("room-regular-hourly");
+            if (regularHourlyRadio) {
+                regularHourlyRadio.checked = true;
+                roomCards.forEach(c => c.classList.remove("selected"));
+                const card = document.querySelector('.room-type-card[for="room-regular-hourly"]');
+                if (card) card.classList.add("selected");
+                toggleDurationField(regularHourlyRadio.value);
+            }
+            calculatePrice();
+        });
+
+        modeBtnDnd.addEventListener("click", () => {
+            modeBtnDnd.classList.add("active");
+            modeBtnBoardgame.classList.remove("active");
+            activeMode = 'dnd';
+            
+            // Hide room selector group
+            if (roomSelectorGroup) roomSelectorGroup.style.display = "none";
+            
+            // Trigger UI toggling for D&D
+            toggleDurationField('private_dnd');
+            calculatePrice();
+        });
+    }
+
     // Set minimum date to today (or tomorrow if today is Thursday)
     const todayObj = new Date();
     const todayStr = todayObj.toISOString().split("T")[0];
@@ -202,9 +242,14 @@ function initBookingForm() {
     // Dynamic price calculation helper
     function calculatePrice() {
         const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
-        if (!selectedRadio) return 0;
-
-        const val = selectedRadio.value;
+        
+        let val = 'regular_hourly';
+        if (activeMode === 'dnd') {
+            val = 'private_dnd';
+        } else {
+            if (!selectedRadio) return 0;
+            val = selectedRadio.value;
+        }
         const players = parseInt(inputPlayers.value) || 1;
 
         let pricePerPerson = 0;
@@ -288,12 +333,12 @@ function initBookingForm() {
         const date = inputDate.value;
 
         const selectedRadio = document.querySelector('input[name="roomSelect"]:checked');
-        if (!selectedRadio) {
+        if (activeMode !== 'dnd' && !selectedRadio) {
             showToast("กรุณาเลือกพื้นที่บริการ", "error");
             return;
         }
 
-        const val = selectedRadio.value;
+        const val = activeMode === 'dnd' ? 'private_dnd' : selectedRadio.value;
         let roomType = 'regular';
         if (val === 'private_dnd') {
             roomType = 'dnd';
@@ -306,8 +351,8 @@ function initBookingForm() {
         let dndDmRequest = 'no';
 
         if (val === 'private_dnd') {
-            const dndSession = document.getElementById("booking-dnd-session").value; // e.g. "14:00-18:00"
-            time = dndSession.split('-')[0]; // "14:00" or "19:00"
+            const dndSession = document.getElementById("booking-dnd-session").value; // e.g. "15:00-19:00"
+            time = dndSession.split('-')[0]; // "15:00" or "20:00"
             duration = '4'; // D&D is 4 hours
 
             const dndDmSelect = document.querySelector('input[name="dndDmSelect"]:checked');
@@ -319,6 +364,37 @@ function initBookingForm() {
                 showToast("ห้อง Private D&D จำกัดจำนวนผู้เล่น 4-6 คนเท่านั้นครับ", "error");
                 return;
             }
+        }
+
+        // Check overlap/conflict client-side first
+        const hasConflict = cachedBookings.some(b => {
+            if (b.date !== date) return false;
+            if (b.status === 'cancelled' || b.status === 'completed') return false;
+
+            // Keep regular separate from private/dnd
+            if (roomType === 'regular') {
+                if (b.roomType !== 'regular') return false;
+            } else {
+                if (b.roomType !== 'private' && b.roomType !== 'dnd') return false;
+            }
+
+            const [h1, m1] = time.split(":").map(Number);
+            const start1 = (h1 - 15) * 60 + m1;
+            const dur1 = duration === 'day' ? 540 : (parseInt(duration) * 60);
+            const end1 = start1 + dur1;
+
+            const [h2, m2] = b.time.split(":").map(Number);
+            const start2 = (h2 - 15) * 60 + m2;
+            const dur2 = b.duration === 'day' ? 540 : (parseInt(b.duration) * 60);
+            const end2 = start2 + dur2;
+
+            return (start1 < end2 && start2 < end1);
+        });
+
+        if (hasConflict) {
+            const areaName = roomType === 'regular' ? 'โซนปกติ' : 'ห้อง Private';
+            showToast(`ขออภัยครับ ${areaName} ถูกจองในช่วงเวลาดังกล่าวแล้ว โปรดตรวจสอบตารางคิว`, "error");
+            return;
         }
 
         // Thursday block validation
@@ -358,13 +434,15 @@ function initBookingForm() {
         }
 
         const totalPrice = calculatePrice();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
 
         try {
             // Set button to loading
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnHtml = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังจองคิว...';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังจองคิว...';
+            }
 
             const booking = await LittleMagicDB.addBooking({
                 name,
@@ -393,12 +471,18 @@ function initBookingForm() {
             toggleDurationField("regular_hourly");
             calculatePrice();
 
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            }
 
         } catch (error) {
             console.error("Booking creation failed:", error);
-            showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง", "error");
+            showToast(error.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง", "error");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            }
         }
     });
 }
@@ -675,7 +759,7 @@ function initQueueSubscription() {
 
         if (privateRoomsCount) {
             const occupiedCount = bookings.filter(b => (b.roomType === 'private' || b.roomType === 'dnd') && b.status === 'active').length;
-            privateRoomsCount.textContent = `${occupiedCount}/2`;
+            privateRoomsCount.textContent = `${occupiedCount}/1`;
         }
 
         // Render queues
@@ -792,7 +876,7 @@ function updatePrivateRoomAvailability(bookings) {
 
     // Count active private rooms today (including D&D sessions since they share the same rooms)
     const activePrivateCount = bookings.filter(b => (b.roomType === 'private' || b.roomType === 'dnd') && b.status === 'active').length;
-    const availablePrivateRooms = Math.max(0, 2 - activePrivateCount);
+    const availablePrivateRooms = Math.max(0, 1 - activePrivateCount);
 
     const hourlyCard = document.querySelector('.room-type-card[for="room-private-hourly"]');
     const dailyCard = document.querySelector('.room-type-card[for="room-private-daily"]');
@@ -809,7 +893,7 @@ function updatePrivateRoomAvailability(bookings) {
 
     if (selectedDate === todayStr && availablePrivateRooms === 0) {
         occupancyTexts.forEach(el => {
-            el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (0/2)</span>`;
+            el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (0/1)</span>`;
         });
 
         if (hourlyCard) {
@@ -856,9 +940,9 @@ function updatePrivateRoomAvailability(bookings) {
     } else {
         occupancyTexts.forEach(el => {
             if (selectedDate === todayStr) {
-                el.innerHTML = `<span style="color: var(--color-status-active); font-weight: 600;"><i class="fas fa-check-circle"></i> ห้องว่างวันนี้: ${availablePrivateRooms}/2</span>`;
+                el.innerHTML = `<span style="color: var(--color-status-active); font-weight: 600;"><i class="fas fa-check-circle"></i> ห้องว่างวันนี้: ${availablePrivateRooms}/1</span>`;
             } else {
-                el.innerHTML = `<span style="color: var(--color-primary); font-weight: 500;"><i class="far fa-check-circle"></i> จองล่วงหน้าได้ (ว่าง 2/2)</span>`;
+                el.innerHTML = `<span style="color: var(--color-primary); font-weight: 500;"><i class="far fa-check-circle"></i> จองล่วงหน้าได้ (ว่าง 1/1)</span>`;
             }
         });
 
@@ -1161,15 +1245,13 @@ function renderSchedule() {
 
     // 2. Render Timeline Blocks
     const rowRegular = document.getElementById("timeline-row-regular");
-    const rowPrivate1 = document.getElementById("timeline-row-private1");
-    const rowPrivate2 = document.getElementById("timeline-row-private2");
+    const rowPrivate = document.getElementById("timeline-row-private");
 
-    if (!rowRegular || !rowPrivate1 || !rowPrivate2) return;
+    if (!rowRegular || !rowPrivate) return;
 
     // Clear rows
     rowRegular.innerHTML = '';
-    rowPrivate1.innerHTML = '';
-    rowPrivate2.innerHTML = '';
+    rowPrivate.innerHTML = '';
 
     const dayOfWeek = new Date(selectedDate).getDay();
     const isClosed = dayOfWeek === 4;
@@ -1215,51 +1297,14 @@ function renderSchedule() {
         }
     });
 
-    // Assign private bookings to Private Row 1 and Row 2 to resolve overlaps visually
-    const private1Slots = Array(18).fill(null);
-    const private2Slots = Array(18).fill(null);
-
-    // Sort private bookings by time to assign chronologically
-    privateBookings.sort((a, b) => {
-        const timeA = a.time.split(":").map(Number);
-        const timeB = b.time.split(":").map(Number);
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-    });
+    // Assign private bookings to the single Private Row
+    const privateSlots = Array(18).fill(null);
 
     privateBookings.forEach(booking => {
         const { startSlot, endSlot } = getBookingSlotRange(booking);
-
-        // Try row 1 first
-        let fitsPrivate1 = true;
         for (let i = startSlot; i < endSlot; i++) {
-            if (private1Slots[i]) {
-                fitsPrivate1 = false;
-                break;
-            }
-        }
-
-        if (fitsPrivate1) {
-            for (let i = startSlot; i < endSlot; i++) {
-                private1Slots[i] = booking;
-            }
-        } else {
-            // Try row 2
-            let fitsPrivate2 = true;
-            for (let i = startSlot; i < endSlot; i++) {
-                if (private2Slots[i]) {
-                    fitsPrivate2 = false;
-                    break;
-                }
-            }
-            if (fitsPrivate2) {
-                for (let i = startSlot; i < endSlot; i++) {
-                    private2Slots[i] = booking;
-                }
-            } else {
-                // If both rows are full, force assign to row 2 anyway
-                for (let i = startSlot; i < endSlot; i++) {
-                    private2Slots[i] = booking;
-                }
+            if (i < 18) {
+                privateSlots[i] = booking;
             }
         }
     });
@@ -1335,8 +1380,7 @@ function renderSchedule() {
     };
 
     renderRowBlocks(rowRegular, regularSlots, 'regular');
-    renderRowBlocks(rowPrivate1, private1Slots, 'private');
-    renderRowBlocks(rowPrivate2, private2Slots, 'private');
+    renderRowBlocks(rowPrivate, privateSlots, 'private');
 
     // 3. Render Detailed Queue Cards for Selected Date
     const queueListHolder = document.getElementById("schedule-queue-list");

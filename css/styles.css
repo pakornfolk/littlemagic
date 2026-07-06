@@ -2011,3 +2011,42 @@ footer {
         gap: 15px;
     }
 }
+
+/* Booking Mode Selector (Board Games vs D&D) */
+.booking-mode-selector {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    background-color: #fff;
+    color: var(--color-primary-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    outline: none;
+}
+
+.mode-btn:hover {
+    border-color: var(--color-primary-light);
+    background-color: var(--color-bg-primary);
+}
+
+.mode-btn.active {
+    border-color: var(--color-accent-magic);
+    background-color: #FDF7F5;
+    color: var(--color-accent-magic);
+    box-shadow: 0 4px 15px rgba(224, 122, 95, 0.1);
+}

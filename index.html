@@ -60,7 +60,7 @@
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-door-closed"></i></div>
                     <div class="stat-info">
-                        <h3 id="private-rooms-count">0/2</h3>
+                        <h3 id="private-rooms-count">0/1</h3>
                         <p>ห้อง Private (ใช้งานอยู่)</p>
                     </div>
                 </div>
@@ -112,6 +112,16 @@
                     </div>
 
                     <form id="booking-form">
+                        <!-- Booking Mode Selector (Board Games vs D&D) -->
+                        <div class="booking-mode-selector">
+                            <button type="button" class="mode-btn active" id="mode-boardgame">
+                                <i class="fas fa-chess-knight"></i> จองเล่นบอร์ดเกม
+                            </button>
+                            <button type="button" class="mode-btn" id="mode-dnd">
+                                <i class="fas fa-dice-d20"></i> จองเล่น D&D
+                            </button>
+                        </div>
+
                         <div class="form-group-row">
                             <div class="form-group">
                                 <label for="booking-name"><i class="fas fa-user"></i> ชื่อผู้จอง (ตัวแทนกลุ่ม)</label>
@@ -138,7 +148,7 @@
                             </span>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group" id="room-selector-group">
                             <label><i class="fas fa-layer-group"></i> เลือกรูปแบบการเล่นและพื้นที่บริการ</label>
                             <div class="room-type-selector"
                                 style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
@@ -176,16 +186,6 @@
                                     <div class="room-card-title"><i class="fas fa-door-closed"></i> ห้อง Private
                                         (เหมารายวัน)</div>
                                     <div class="room-card-price">250 บาท / คน (เล่นทั้งวัน)</div>
-                                    <div class="room-card-occupancy private-occupancy-text"
-                                        style="font-size: 11px; margin-top: 6px; color: var(--color-primary);">
-                                        กำลังคำนวณห้องว่าง...</div>
-                                </label>
-
-                                <!-- Private DnD Card -->
-                                <label class="room-type-card" for="room-private-dnd">
-                                    <input type="radio" id="room-private-dnd" name="roomSelect" value="private_dnd">
-                                    <div class="room-card-title"><i class="fas fa-dice-d20"></i> ห้อง Private D&D</div>
-                                    <div class="room-card-price">250 บาท / คน (เล่นเป็นรอบ)</div>
                                     <div class="room-card-occupancy private-occupancy-text"
                                         style="font-size: 11px; margin-top: 6px; color: var(--color-primary);">
                                         กำลังคำนวณห้องว่าง...</div>
@@ -240,8 +240,8 @@
                             <div class="form-group" id="booking-dnd-session-wrapper" style="display: none;">
                                 <label for="booking-dnd-session"><i class="fas fa-history"></i> รอบเวลาเล่น D&D</label>
                                 <select id="booking-dnd-session" class="form-select">
-                                    <option value="14:00-18:00">รอบบ่าย (14:00 - 18:00 น.)</option>
-                                    <option value="19:00-23:00">รอบค่ำ (19:00 - 23:00 น.)</option>
+                                    <option value="15:00-19:00">รอบบ่าย (15:00 - 19:00 น.)</option>
+                                    <option value="20:00-24:00">รอบค่ำ (20:00 - 24:00 น.)</option>
                                 </select>
                             </div>
                         </div>
@@ -446,18 +446,10 @@
                                 </div>
                             </div>
 
-                            <!-- Row 2: Private Room 1 -->
+                            <!-- Row 2: Private Room -->
                             <div class="timeline-row">
-                                <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private 1</div>
-                                <div class="timeline-grid-row" id="timeline-row-private1">
-                                    <!-- Dynamic 18 block cells -->
-                                </div>
-                            </div>
-
-                            <!-- Row 3: Private Room 2 -->
-                            <div class="timeline-row">
-                                <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private 2</div>
-                                <div class="timeline-grid-row" id="timeline-row-private2">
+                                <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private</div>
+                                <div class="timeline-grid-row" id="timeline-row-private">
                                     <!-- Dynamic 18 block cells -->
                                 </div>
                             </div>

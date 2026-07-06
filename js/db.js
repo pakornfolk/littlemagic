@@ -108,6 +108,7 @@
      */
     async function addBooking(bookingData) {
         const bookingCode = generateBookingCode();
+        const durationVal = bookingData.duration === 'day' ? 'day' : parseInt(bookingData.duration);
         const newBooking = {
             name: bookingData.name,
             phone: bookingData.phone,
@@ -116,13 +117,55 @@
             roomType: bookingData.roomType, // 'regular', 'private', or 'dnd'
             date: bookingData.date,
             time: bookingData.time,
-            duration: parseInt(bookingData.duration),
+            duration: durationVal,
             totalPrice: parseFloat(bookingData.totalPrice),
             status: 'pending', // pending, confirmed, active, completed, cancelled
             bookingCode: bookingCode,
             dndDmRequest: bookingData.dndDmRequest || "no", // 'yes' or 'no'
             createdAt: new Date().toISOString()
         };
+
+        // Check for conflicts for all booking types (Regular zone overlaps, and Private/D&D overlaps separately)
+        let activeBookingsForDate = [];
+        if (dbMode === 'firebase' && db) {
+            const snap = await db.collection("bookings")
+                                 .where("date", "==", newBooking.date)
+                                 .get();
+            snap.forEach(doc => {
+                activeBookingsForDate.push({ id: doc.id, ...doc.data() });
+            });
+        } else {
+            const bookings = getLocalBookings();
+            activeBookingsForDate = bookings.filter(b => b.date === newBooking.date);
+        }
+
+        const hasConflict = activeBookingsForDate.some(b => {
+            if (b.status === 'cancelled' || b.status === 'completed') return false;
+            
+            // Keep regular separate from private/dnd
+            if (newBooking.roomType === 'regular') {
+                if (b.roomType !== 'regular') return false;
+            } else {
+                if (b.roomType !== 'private' && b.roomType !== 'dnd') return false;
+            }
+
+            const [h1, m1] = newBooking.time.split(":").map(Number);
+            const start1 = (h1 - 15) * 60 + m1;
+            const dur1 = newBooking.duration === 'day' ? 540 : (parseInt(newBooking.duration) * 60);
+            const end1 = start1 + dur1;
+
+            const [h2, m2] = b.time.split(":").map(Number);
+            const start2 = (h2 - 15) * 60 + m2;
+            const dur2 = b.duration === 'day' ? 540 : (parseInt(b.duration) * 60);
+            const end2 = start2 + dur2;
+
+            return (start1 < end2 && start2 < end1);
+        });
+
+        if (hasConflict) {
+            const areaName = newBooking.roomType === 'regular' ? 'โซนปกติ' : 'ห้อง Private';
+            throw new Error(`${areaName} ถูกจองในช่วงเวลาดังกล่าวแล้ว โปรดเลือกเวลาอื่น`);
+        }
 
         if (dbMode === 'firebase' && db) {
             const docRef = await db.collection("bookings").add(newBooking);

@@ -544,14 +544,21 @@ function showBookingSuccess(booking) {
         <div class="admin-login-box" style="max-width: 480px; text-align: left;">
             <div style="text-align: center; margin-bottom: 20px; color: var(--color-status-active);">
                 <i class="fas fa-check-circle" style="font-size: 56px;"></i>
-                <h2 style="margin-top: 15px; color: var(--color-primary-dark);">จองคิวสำเร็จ!</h2>
-                <p style="color: var(--color-primary);">กรุณาบันทึกข้อมูลการจองนี้ไว้เพื่อแสดงหน้าร้าน</p>
+                <h2 style="margin-top: 15px; color: var(--color-primary-dark);">จองคิวสำเร็จ (รอการยืนยัน)</h2>
+                <p style="color: var(--color-primary); font-size: 13px; margin-top: 4px;">กรุณากดส่งข้อมูลยืนยันตัวตนทาง LINE ด้านล่างเพื่อให้ร้านอนุมัติคิวจอง</p>
             </div>
             
-            <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
+            <div style="background: #FFF9F2; border: 1px dashed var(--color-status-pending); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #B25E00; margin-bottom: 12px; display: flex; gap: 8px; align-items: flex-start;">
                 <i class="fas fa-exclamation-triangle" style="margin-top: 2.5px;"></i>
                 <div>
-                    <strong>ข้อแนะนำเกี่ยวกับอีเมล:</strong> หากไม่พบอีเมลยืนยันการจองในกล่องจดหมายปกติ โปรดตรวจสอบในกล่อง <strong>"จดหมายขยะ (Spam)"</strong> หรือสอบถามสถานะการจองทางไลน์ ได้เลยครับ
+                    <strong>โปรดทราบ:</strong> ท่านจำเป็นต้องกดส่งรายละเอียดการจองนี้ไปที่ LINE OA ของร้าน เพื่อให้แอดมินตรวจสอบและ<strong>ทำการอนุมัติสิทธิ์จองคิว</strong>ให้เสร็จสมบูรณ์ค่ะ
+                </div>
+            </div>
+
+            <div style="background: #F4F8FB; border: 1px dashed var(--color-status-confirmed); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: #0056B3; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
+                <i class="fas fa-envelope" style="margin-top: 2.5px;"></i>
+                <div>
+                    <strong>คำแนะนำเกี่ยวกับอีเมล:</strong> ระบบได้ส่งรายละเอียดจองคิวเข้าระบบอีเมลของท่านแล้ว หากไม่ได้รับ โปรดตรวจสอบกล่อง <strong>"จดหมายขยะ (Spam)"</strong> ของท่านนะคะ
                 </div>
             </div>
             
@@ -596,21 +603,30 @@ function showBookingSuccess(booking) {
                 </div>
             </div>
             
-            <button id="close-success-modal" class="btn btn-primary">ตกลง (ปิดหน้าต่าง)</button>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <a href="https://line.me/R/oaMessage/@843audre/?${encodeURIComponent(
+                    `สวัสดีครับ ต้องการยืนยันการจองคิว\nรหัสจอง: ${booking.bookingCode}\nผู้จอง: คุณ ${booking.name}\nวันที่เล่น: ${formatThaiDate(booking.date)}\nเวลา: ${booking.time} น. (${getDurationText(booking.duration)})\nพื้นที่: ${booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private' : 'โซนปกติ')}\nจำนวนผู้เล่น: ${booking.players} คน`
+                )}" target="_blank" id="confirm-line-btn" class="btn" style="background-color: #06C755; color: white; width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 50px; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); text-align: center;">
+                    <i class="fab fa-line" style="font-size: 22px;"></i> ส่งข้อความยืนยันคิวผ่าน LINE ทันที
+                </a>
+            </div>
         </div>
     `;
 
     document.body.appendChild(modal);
 
-    document.getElementById("close-success-modal").addEventListener("click", () => {
-        modal.remove();
-        // Switch user to inquiry tab automatically to see their booking!
-        const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
-        if (lookupTabBtn) {
-            lookupTabBtn.click();
-            document.getElementById("lookup-search").value = booking.phone;
-            document.getElementById("lookup-btn").click();
-        }
+    document.getElementById("confirm-line-btn").addEventListener("click", () => {
+        // Delay closing slightly so browser redirect opens and doesn't get blocked
+        setTimeout(() => {
+            modal.remove();
+            // Switch user to inquiry tab automatically to see their booking!
+            const lookupTabBtn = document.querySelector('.tab-btn[data-tab="lookup"]');
+            if (lookupTabBtn) {
+                lookupTabBtn.click();
+                document.getElementById("lookup-search").value = booking.phone;
+                document.getElementById("lookup-btn").click();
+            }
+        }, 500);
     });
 }
 

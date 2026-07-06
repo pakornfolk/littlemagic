@@ -201,6 +201,8 @@ function initBookingForm() {
         const dndStyleWrapper = document.getElementById("booking-dnd-style-wrapper");
         const timeInput = document.getElementById("booking-time");
         const dndSessionInput = document.getElementById("booking-dnd-session");
+        const rulesGeneral = document.getElementById("rules-general");
+        const rulesDndStyles = document.getElementById("rules-dnd-styles");
 
         // TODO: Confirm if D&D should use fixed session blocks or free selection.
         if (selectedValue === 'private_dnd') {
@@ -210,6 +212,10 @@ function initBookingForm() {
             if (dndOptionsWrapper) dndOptionsWrapper.style.display = "block";
             if (durationWrapper) durationWrapper.style.display = "none";
             if (dndStyleWrapper) dndStyleWrapper.style.display = "";
+
+            // Toggle booking guide cards: Show D&D play styles, hide general regulations
+            if (rulesGeneral) rulesGeneral.style.display = "none";
+            if (rulesDndStyles) rulesDndStyles.style.display = "block";
 
             if (timeInput) timeInput.required = false;
             if (dndSessionInput) dndSessionInput.required = true;
@@ -229,6 +235,10 @@ function initBookingForm() {
             if (dndOptionsWrapper) dndOptionsWrapper.style.display = "none";
             if (durationWrapper) durationWrapper.style.display = "";
             if (dndStyleWrapper) dndStyleWrapper.style.display = "none";
+
+            // Toggle booking guide cards: Hide D&D play styles, show general regulations
+            if (rulesGeneral) rulesGeneral.style.display = "block";
+            if (rulesDndStyles) rulesDndStyles.style.display = "none";
 
             if (timeInput) timeInput.required = true;
             if (dndSessionInput) dndSessionInput.required = false;

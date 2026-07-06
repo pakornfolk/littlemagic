@@ -122,6 +122,7 @@
             status: 'pending', // pending, confirmed, active, completed, cancelled
             bookingCode: bookingCode,
             dndDmRequest: bookingData.dndDmRequest || "no", // 'yes' or 'no'
+            dndPlayStyle: bookingData.dndPlayStyle || "",
             createdAt: new Date().toISOString()
         };
 

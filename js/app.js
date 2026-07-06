@@ -48,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("lm_bookings", JSON.stringify(filtered));
         }
     }
+
+    initParkingModal();
 });
 
 // 1. Toast Notification Helper
@@ -126,7 +128,7 @@ function initBookingForm() {
             activeMode = 'boardgame';
             
             // Show room selector group
-            if (roomSelectorGroup) roomSelectorGroup.style.display = "block";
+            if (roomSelectorGroup) roomSelectorGroup.style.display = "";
             
             // Select regular hourly by default
             const regularHourlyRadio = document.getElementById("room-regular-hourly");
@@ -151,6 +153,11 @@ function initBookingForm() {
             // Trigger UI toggling for D&D
             toggleDurationField('private_dnd');
             calculatePrice();
+
+            // Trigger date picker validation for D&D constraints
+            if (inputDate) {
+                inputDate.dispatchEvent(new Event('change'));
+            }
         });
     }
 
@@ -191,6 +198,7 @@ function initBookingForm() {
         const dndSessionWrapper = document.getElementById("booking-dnd-session-wrapper");
         const dndOptionsWrapper = document.getElementById("dnd-options-wrapper");
         const durationWrapper = document.getElementById("duration-wrapper");
+        const dndStyleWrapper = document.getElementById("booking-dnd-style-wrapper");
         const timeInput = document.getElementById("booking-time");
         const dndSessionInput = document.getElementById("booking-dnd-session");
 
@@ -198,9 +206,10 @@ function initBookingForm() {
         if (selectedValue === 'private_dnd') {
             // D&D Mode: Swap check-in time with session blocks, hide duration selector
             if (timeWrapper) timeWrapper.style.display = "none";
-            if (dndSessionWrapper) dndSessionWrapper.style.display = "block";
+            if (dndSessionWrapper) dndSessionWrapper.style.display = "";
             if (dndOptionsWrapper) dndOptionsWrapper.style.display = "block";
             if (durationWrapper) durationWrapper.style.display = "none";
+            if (dndStyleWrapper) dndStyleWrapper.style.display = "";
 
             if (timeInput) timeInput.required = false;
             if (dndSessionInput) dndSessionInput.required = true;
@@ -215,10 +224,11 @@ function initBookingForm() {
             }
         } else {
             // Normal Mode: Restore standard inputs
-            if (timeWrapper) timeWrapper.style.display = "block";
+            if (timeWrapper) timeWrapper.style.display = "";
             if (dndSessionWrapper) dndSessionWrapper.style.display = "none";
             if (dndOptionsWrapper) dndOptionsWrapper.style.display = "none";
-            if (durationWrapper) durationWrapper.style.display = "block";
+            if (durationWrapper) durationWrapper.style.display = "";
+            if (dndStyleWrapper) dndStyleWrapper.style.display = "none";
 
             if (timeInput) timeInput.required = true;
             if (dndSessionInput) dndSessionInput.required = false;
@@ -266,15 +276,8 @@ function initBookingForm() {
         } else if (val === 'private_daily') {
             pricePerPerson = RATE_PRIVATE_DAY;
         } else if (val === 'private_dnd') {
-            // TODO: Confirm if D&D price is 250 THB per person or per group. Currently set to 250 THB per person.
             pricePerPerson = RATE_DND_PLAY;
-
-            // Check if DM is requested
-            const selectedDmRadio = document.querySelector('input[name="dndDmSelect"]:checked');
-            if (selectedDmRadio && selectedDmRadio.value === 'yes') {
-                // TODO: Confirm DM session fee. Currently set to flat 1500 THB.
-                extraDmFee = RATE_DND_DM_SESSION;
-            }
+            extraDmFee = 0; // Professional DM is always included in the per-person price
         }
 
         const total = (pricePerPerson * players) + extraDmFee;
@@ -295,16 +298,14 @@ function initBookingForm() {
         radio.addEventListener("change", calculatePrice);
     });
 
-    // Bind date change to private room availability check and Thursday block
+    // Bind date change to private room availability check and Thursday/Monday block
     if (inputDate) {
         inputDate.addEventListener("change", () => {
             const dateVal = inputDate.value;
             if (dateVal) {
-                const dayOfWeek = new Date(dateVal).getDay(); // 0 is Sunday, 4 is Thursday
-                if (dayOfWeek === 4) {
-                    showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
-
-                    // Revert to today (or tomorrow if today is Thursday)
+                const dayOfWeek = new Date(dateVal).getDay(); // 0 is Sunday, 1 is Monday, 4 is Thursday
+                
+                const revertDate = () => {
                     const tObj = new Date();
                     const tStr = tObj.toISOString().split("T")[0];
                     if (tObj.getDay() === 4) {
@@ -315,7 +316,34 @@ function initBookingForm() {
                         inputDate.value = tStr;
                     }
                     updatePrivateRoomAvailability(cachedBookings);
+                };
+
+                if (dayOfWeek === 4) {
+                    showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
+                    revertDate();
                     return;
+                }
+
+                if (activeMode === 'dnd') {
+                    if (dayOfWeek === 1) {
+                        showToast("ขออภัยครับ บริการ D&D งดให้บริการในวันจันทร์ กรุณาเลือกวันอื่นนะครับ", "error");
+                        revertDate();
+                        return;
+                    }
+
+                    // Check if date is at least 2 days from today
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const bookingDate = new Date(dateVal);
+                    bookingDate.setHours(0, 0, 0, 0);
+                    const diffTime = bookingDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 2) {
+                        showToast("ขออภัยครับ การเล่น D&D จำเป็นต้องจองล่วงหน้าอย่างน้อย 2 วัน เพื่อจัดเตรียมความพร้อมครับ", "error");
+                        revertDate();
+                        return;
+                    }
                 }
             }
             updatePrivateRoomAvailability(cachedBookings);
@@ -348,15 +376,14 @@ function initBookingForm() {
 
         let time = document.getElementById("booking-time").value;
         let duration = val.endsWith('daily') ? 'day' : inputDuration.value;
-        let dndDmRequest = 'no';
+        let dndDmRequest = 'yes'; // D&D always includes a professional DM
+        let dndPlayStyle = '';
 
         if (val === 'private_dnd') {
             const dndSession = document.getElementById("booking-dnd-session").value; // e.g. "15:00-19:00"
             time = dndSession.split('-')[0]; // "15:00" or "20:00"
-            duration = '4'; // D&D is 4 hours
-
-            const dndDmSelect = document.querySelector('input[name="dndDmSelect"]:checked');
-            dndDmRequest = dndDmSelect ? dndDmSelect.value : 'no';
+            duration = '4'; // D&D session is 4 hours
+            dndPlayStyle = document.getElementById("booking-dnd-style").value;
 
             // Validate D&D players (4-6)
             const numPlayers = parseInt(players) || 0;
@@ -397,12 +424,32 @@ function initBookingForm() {
             return;
         }
 
-        // Thursday block validation
+        // Thursday/Monday and 2-day lead block validation
         if (date) {
             const dayOfWeek = new Date(date).getDay();
             if (dayOfWeek === 4) {
                 showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี", "error");
                 return;
+            }
+
+            if (roomType === 'dnd') {
+                if (dayOfWeek === 1) { // Monday is 1
+                    showToast("ขออภัยครับ บริการ D&D งดให้บริการในวันจันทร์", "error");
+                    return;
+                }
+
+                // Must book D&D at least 2 days in advance
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const bookingDate = new Date(date);
+                bookingDate.setHours(0, 0, 0, 0);
+                const diffTime = bookingDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays < 2) {
+                    showToast("ขออภัยครับ การเล่น D&D จำเป็นต้องจองล่วงหน้าอย่างน้อย 2 วัน เพื่อให้ DM จัดเตรียมอุปกรณ์ครับ", "error");
+                    return;
+                }
             }
         }
 
@@ -454,7 +501,8 @@ function initBookingForm() {
                 time,
                 duration,
                 totalPrice,
-                dndDmRequest
+                dndDmRequest,
+                dndPlayStyle
             });
 
             // Show Success Modal/Screen
@@ -528,6 +576,12 @@ function showBookingSuccess(booking) {
                     <span>พื้นที่ / ห้อง</span>
                     <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
                 </div>
+                ${booking.roomType === 'dnd' && booking.dndPlayStyle ? `
+                <div class="booking-detail-row">
+                    <span>รูปแบบการเล่น</span>
+                    <strong style="color: var(--color-primary-dark);">${booking.dndPlayStyle}</strong>
+                </div>
+                ` : ''}
                 <div class="booking-detail-row">
                     <span>วันที่จอง</span>
                     <span>${formatThaiDate(booking.date)}</span>
@@ -646,6 +700,12 @@ function renderLookupResults(bookings, container) {
                 <span>พื้นที่ / ห้อง</span>
                 <span>${booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)')}</span>
             </div>
+            ${booking.roomType === 'dnd' && booking.dndPlayStyle ? `
+            <div class="booking-detail-row">
+                <span>รูปแบบการเล่น</span>
+                <strong style="color: var(--color-primary-dark);">${booking.dndPlayStyle}</strong>
+            </div>
+            ` : ''}
             <div class="booking-detail-row">
                 <span>วันที่จอง</span>
                 <span>${formatThaiDate(booking.date)}</span>
@@ -874,9 +934,19 @@ function updatePrivateRoomAvailability(bookings) {
     const selectedDate = inputDate.value;
     const todayStr = new Date().toISOString().split("T")[0];
 
+    // Check if there is a daily booking on the selected date (which blocks the entire day)
+    const hasDailyBooking = bookings.some(b => 
+        b.date === selectedDate && 
+        (b.roomType === 'private' || b.roomType === 'dnd') && 
+        (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active') &&
+        b.duration === 'day'
+    );
+
     // Count active private rooms today (including D&D sessions since they share the same rooms)
     const activePrivateCount = bookings.filter(b => (b.roomType === 'private' || b.roomType === 'dnd') && b.status === 'active').length;
     const availablePrivateRooms = Math.max(0, 1 - activePrivateCount);
+
+    const isFullOnSelectedDate = (selectedDate === todayStr && availablePrivateRooms === 0) || hasDailyBooking;
 
     const hourlyCard = document.querySelector('.room-type-card[for="room-private-hourly"]');
     const dailyCard = document.querySelector('.room-type-card[for="room-private-daily"]');
@@ -884,16 +954,19 @@ function updatePrivateRoomAvailability(bookings) {
 
     const hourlyRadio = document.getElementById("room-private-hourly");
     const dailyRadio = document.getElementById("room-private-daily");
-    const dndRadio = document.getElementById("room-private-dnd");
 
     const regularHourlyRadio = document.getElementById("room-regular-hourly");
     const regularHourlyCard = document.querySelector('.room-type-card[for="room-regular-hourly"]');
 
     const occupancyTexts = document.querySelectorAll(".private-occupancy-text");
 
-    if (selectedDate === todayStr && availablePrivateRooms === 0) {
+    if (isFullOnSelectedDate) {
         occupancyTexts.forEach(el => {
-            el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (0/1)</span>`;
+            if (hasDailyBooking) {
+                el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (มีจองเหมารายวัน)</span>`;
+            } else {
+                el.innerHTML = `<span style="color: var(--color-status-cancelled); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> เต็มแล้ววันนี้ (0/1)</span>`;
+            }
         });
 
         if (hourlyCard) {
@@ -912,8 +985,8 @@ function updatePrivateRoomAvailability(bookings) {
             dndCard.style.cursor = "not-allowed";
         }
 
-        // If Private/D&D is selected, auto-select Regular Hourly
-        if (hourlyRadio && dailyRadio && dndRadio && (hourlyRadio.checked || dailyRadio.checked || dndRadio.checked)) {
+        // If Private room is selected, auto-select Regular Hourly
+        if (hourlyRadio && dailyRadio && (hourlyRadio.checked || dailyRadio.checked)) {
             regularHourlyRadio.checked = true;
             document.querySelectorAll(".room-type-card").forEach(c => c.classList.remove("selected"));
             if (regularHourlyCard) {
@@ -928,14 +1001,7 @@ function updatePrivateRoomAvailability(bookings) {
             }
 
             // Recalculate price
-            const priceDisplay = document.getElementById("estimated-price");
-            const inputPlayers = document.getElementById("booking-players");
-            if (priceDisplay && inputPlayers) {
-                const players = parseInt(inputPlayers.value) || 1;
-                const hours = parseInt(inputDuration.value) || 1;
-                const total = hours * 40 * players;
-                priceDisplay.textContent = total.toLocaleString();
-            }
+            calculatePrice();
         }
     } else {
         occupancyTexts.forEach(el => {
@@ -1019,7 +1085,7 @@ async function sendCancellationEmails(booking) {
             date: formatThaiDate(booking.date),
             time: booking.time,
             players: booking.players,
-            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            room_type: booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
             price: booking.totalPrice
         };
 
@@ -1057,11 +1123,11 @@ async function sendNewBookingEmailToShop(booking) {
             to_name: "แอดมิน Little Magic",
             booking_code: booking.bookingCode,
             status_text: "มีคิวจองใหม่เข้ามา (รออนุมัติ)",
-            status_detail: `คุณ ${booking.name} ได้จองคิวเข้ามาใหม่ในระบบ กรุณาตรวจสอบข้อมูลและกดยืนยันคิวในระบบหลังบ้าน`,
+            status_detail: `คุณ ${booking.name} ได้จองคิวเข้ามาใหม่ in ระบบ กรุณาตรวจสอบข้อมูลและกดยืนยันคิวในระบบหลังบ้าน`,
             date: formatThaiDate(booking.date),
             time: booking.time,
             players: booking.players,
-            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            room_type: booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
             price: booking.totalPrice
         };
 
@@ -1107,7 +1173,7 @@ async function sendPendingBookingEmailToCustomer(booking) {
             date: formatThaiDate(booking.date),
             time: booking.time,
             players: booking.players,
-            room_type: booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)',
+            room_type: booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
             price: booking.totalPrice
         };
 
@@ -1126,66 +1192,101 @@ async function sendPendingBookingEmailToCustomer(booking) {
 // 7. Interactive Booking Schedule Tab Logic
 // ==========================================================================
 function initScheduleTab() {
-    const scheduleDateInput = document.getElementById("schedule-date");
-    if (!scheduleDateInput) return;
+    const types = ['boardgame', 'dnd'];
+    types.forEach(type => {
+        const scheduleDateInput = document.getElementById(`schedule-${type}-date`);
+        if (!scheduleDateInput) return;
 
-    // Set initial date: Today (or tomorrow if today is Thursday)
-    const todayObj = new Date();
-    const todayStr = todayObj.toISOString().split("T")[0];
-    scheduleDateInput.min = todayStr;
+        // Set initial date: Today (or tomorrow if today is Thursday)
+        const todayObj = new Date();
+        const todayStr = todayObj.toISOString().split("T")[0];
+        scheduleDateInput.min = todayStr;
 
-    if (todayObj.getDay() === 4) { // Thursday
-        const tomorrowObj = new Date();
-        tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-        scheduleDateInput.value = tomorrowObj.toISOString().split("T")[0];
-    } else {
-        scheduleDateInput.value = todayStr;
-    }
+        if (todayObj.getDay() === 4) { // Thursday
+            const tomorrowObj = new Date();
+            tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+            scheduleDateInput.value = tomorrowObj.toISOString().split("T")[0];
+        } else {
+            scheduleDateInput.value = todayStr;
+        }
 
-    // Bind change listener
-    scheduleDateInput.addEventListener("change", () => {
-        const dateVal = scheduleDateInput.value;
-        if (dateVal) {
-            const dayOfWeek = new Date(dateVal).getDay(); // 4 is Thursday
-            if (dayOfWeek === 4) {
-                showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
+        // Bind change listener
+        scheduleDateInput.addEventListener("change", () => {
+            const dateVal = scheduleDateInput.value;
+            if (dateVal) {
+                const dayOfWeek = new Date(dateVal).getDay(); // 4 is Thursday
+                if (dayOfWeek === 4) {
+                    showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
 
-                // Revert to today (or tomorrow if today is Thursday)
-                const tObj = new Date();
-                const tStr = tObj.toISOString().split("T")[0];
-                if (tObj.getDay() === 4) {
-                    const tomObj = new Date();
-                    tomObj.setDate(tomObj.getDate() + 1);
-                    scheduleDateInput.value = tomObj.toISOString().split("T")[0];
-                } else {
-                    scheduleDateInput.value = tStr;
+                    // Revert to today (or tomorrow if today is Thursday)
+                    const tObj = new Date();
+                    const tStr = tObj.toISOString().split("T")[0];
+                    if (tObj.getDay() === 4) {
+                        const tomObj = new Date();
+                        tomObj.setDate(tomObj.getDate() + 1);
+                        scheduleDateInput.value = tomObj.toISOString().split("T")[0];
+                    } else {
+                        scheduleDateInput.value = tStr;
+                    }
                 }
             }
-        }
-        renderSchedule();
+            renderSchedule();
+        });
     });
 
     // Render schedule initially
     renderSchedule();
 }
 
+// Helper: format slot index to displayable time (HH:MM)
+function getSlotTime(index) {
+    const mins = index * 30;
+    const h = Math.floor(mins / 60) + 15;
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// Helper to calculate slot occupancy [startSlot, endSlot]
+function getBookingSlotRange(booking) {
+    const [h, m] = booking.time.split(":").map(Number);
+    const startMin = (h - 15) * 60 + m;
+    const durMin = (booking.duration === 'day') ? 540 : (booking.duration * 60);
+    const startSlot = Math.max(0, Math.floor(startMin / 30));
+    const endSlot = Math.min(18, Math.ceil((startMin + durMin) / 30) + 1);
+    return { startSlot, endSlot };
+}
+
+// Helper to calculate booking end time string (HH:MM)
+function getBookingEndTime(booking) {
+    if (booking.duration === 'day') return '24:00';
+    const [h, m] = booking.time.split(":").map(Number);
+    const endHour = h + parseInt(booking.duration);
+    return `${String(endHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 function renderSchedule() {
-    const scheduleDateInput = document.getElementById("schedule-date");
+    renderScheduleSection('boardgame');
+    renderScheduleSection('dnd');
+}
+
+function renderScheduleSection(type) {
+    const scheduleDateInput = document.getElementById(`schedule-${type}-date`);
     if (!scheduleDateInput) return;
 
     const selectedDate = scheduleDateInput.value;
     if (!selectedDate) return;
 
-    // Filter active bookings (pending, confirmed, active) for selectedDate
+    // Filter active bookings (pending, confirmed, active) for selectedDate.
+    // Fetch all active bookings on this date; we will filter by roomType when populating timeline rows and list cards.
     const activeBookings = cachedBookings.filter(b =>
         b.date === selectedDate &&
         (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active')
     );
 
     // 1. Calculate & Render Vibe Meter
-    const vibeBadge = document.getElementById("vibe-badge");
-    const vibeText = document.getElementById("vibe-text");
-    const vibeGaugeFill = document.getElementById("vibe-gauge-fill");
+    const vibeBadge = document.getElementById(`vibe-${type}-badge`);
+    const vibeText = document.getElementById(`vibe-${type}-text`);
+    const vibeGaugeFill = document.getElementById(`vibe-${type}-gauge-fill`);
 
     if (vibeBadge && vibeText && vibeGaugeFill) {
         const dayOfWeek = new Date(selectedDate).getDay();
@@ -1199,23 +1300,28 @@ function renderSchedule() {
             vibeGaugeFill.style.width = "0%";
             vibeGaugeFill.className = "vibe-gauge-fill";
         } else {
-            const bookingCount = activeBookings.length;
+            // We count all active bookings for this date (both board game and dnd) to show true shop status
+            const totalActiveShopBookings = cachedBookings.filter(b =>
+                b.date === selectedDate &&
+                (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active')
+            ).length;
+
             let levelClass = "level-chill";
             let widthPct = "15%";
             let badgeTxt = "ชิลสบายๆ 🟢";
             let descTxt = "ร้านค่อนข้างโล่ง เล่นบอร์ดเกมแนวไหนก็มีสมาธิ!";
 
-            if (bookingCount >= 2 && bookingCount <= 3) {
+            if (totalActiveShopBookings >= 2 && totalActiveShopBookings <= 3) {
                 levelClass = "level-good";
                 widthPct = "45%";
                 badgeTxt = "กำลังสนุก 🟡";
                 descTxt = "บรรยากาศกำลังดี มีเสียงหัวเราะรอบโต๊ะเป็นกันเอง";
-            } else if (bookingCount >= 4 && bookingCount <= 5) {
+            } else if (totalActiveShopBookings >= 4 && totalActiveShopBookings <= 5) {
                 levelClass = "level-lively";
                 widthPct = "75%";
                 badgeTxt = "ครึกครื้น 🟠";
                 descTxt = "ผู้เล่นเยอะ บรรยากาศบอร์ดเกมคาเฟ่เต็มพิกัด!";
-            } else if (bookingCount >= 6) {
+            } else if (totalActiveShopBookings >= 6) {
                 levelClass = "level-peak";
                 widthPct = "100%";
                 badgeTxt = "ปาร์ตี้สุดเหวี่ยง 🔥";
@@ -1223,15 +1329,14 @@ function renderSchedule() {
             }
 
             vibeBadge.textContent = badgeTxt;
-            // Clear any inline styles to let CSS classes take over
             vibeBadge.style.backgroundColor = "";
             vibeBadge.style.color = "";
 
-            if (bookingCount < 2) {
+            if (totalActiveShopBookings < 2) {
                 vibeBadge.className = "badge badge-active";
-            } else if (bookingCount <= 3) {
+            } else if (totalActiveShopBookings <= 3) {
                 vibeBadge.className = "badge badge-pending";
-            } else if (bookingCount <= 5) {
+            } else if (totalActiveShopBookings <= 5) {
                 vibeBadge.className = "badge badge-lively";
             } else {
                 vibeBadge.className = "badge badge-cancelled";
@@ -1243,74 +1348,8 @@ function renderSchedule() {
         }
     }
 
-    // 2. Render Timeline Blocks
-    const rowRegular = document.getElementById("timeline-row-regular");
-    const rowPrivate = document.getElementById("timeline-row-private");
-
-    if (!rowRegular || !rowPrivate) return;
-
-    // Clear rows
-    rowRegular.innerHTML = '';
-    rowPrivate.innerHTML = '';
-
-    const dayOfWeek = new Date(selectedDate).getDay();
-    const isClosed = dayOfWeek === 4;
-
-    // Helper: format slot index to displayable time (HH:MM)
-    const getSlotTime = (index) => {
-        const mins = index * 30;
-        const h = Math.floor(mins / 60) + 15;
-        const m = mins % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
-
-    // Calculate booking overlap ranges
-    const regularBookings = activeBookings.filter(b => b.roomType === 'regular');
-    const privateBookings = activeBookings.filter(b => b.roomType === 'private' || b.roomType === 'dnd');
-
-    // Helper to calculate slot occupancy [startSlot, endSlot]
-    const getBookingSlotRange = (booking) => {
-        const [h, m] = booking.time.split(":").map(Number);
-        const startMin = (h - 15) * 60 + m;
-        const durMin = (booking.duration === 'day') ? 540 : (booking.duration * 60);
-        const startSlot = Math.max(0, Math.floor(startMin / 30));
-        const endSlot = Math.min(18, Math.ceil((startMin + durMin) / 30) + 1);
-        return { startSlot, endSlot };
-    };
-
-    // Helper to calculate booking end time string (HH:MM)
-    const getBookingEndTime = (booking) => {
-        if (booking.duration === 'day') return '24:00';
-        const [h, m] = booking.time.split(":").map(Number);
-        const endHour = h + parseInt(booking.duration);
-        return `${String(endHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
-
-    // Initialize regular row (we just check if any active booking covers a slot)
-    const regularSlots = Array(18).fill(null);
-    regularBookings.forEach(booking => {
-        const { startSlot, endSlot } = getBookingSlotRange(booking);
-        for (let i = startSlot; i < endSlot; i++) {
-            if (!regularSlots[i]) {
-                regularSlots[i] = booking;
-            }
-        }
-    });
-
-    // Assign private bookings to the single Private Row
-    const privateSlots = Array(18).fill(null);
-
-    privateBookings.forEach(booking => {
-        const { startSlot, endSlot } = getBookingSlotRange(booking);
-        for (let i = startSlot; i < endSlot; i++) {
-            if (i < 18) {
-                privateSlots[i] = booking;
-            }
-        }
-    });
-
     // Helper: render blocks into a row element
-    const renderRowBlocks = (rowElement, slotsArray, zoneType) => {
+    const renderRowBlocks = (rowElement, slotsArray, zoneType, isClosed, selectedDate) => {
         let i = 0;
         while (i < 18) {
             if (isClosed) {
@@ -1326,13 +1365,12 @@ function renderSchedule() {
 
             const booking = slotsArray[i];
             if (booking) {
-                // Find how many consecutive slots belong to this same booking ID
                 const startSlot = i;
                 const bookingId = booking.id;
                 while (i < 18 && slotsArray[i] && slotsArray[i].id === bookingId) {
                     i++;
                 }
-                const endSlot = i; // i is now the slot index after the booking ends
+                const endSlot = i;
 
                 const block = document.createElement("div");
                 let statusClass = "occupied-pending";
@@ -1350,7 +1388,6 @@ function renderSchedule() {
                 block.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
                 block.title = `จองแล้ว: ${booking.time} - ${endTimeStr} น. (คุณ ${maskName(booking.name)} - ${statusName})`;
 
-                // Show text inside the bar: e.g. "18:00 - 20:00"
                 const spanColumns = endSlot - startSlot;
                 if (spanColumns >= 2) {
                     block.innerHTML = `<span style="font-size: 11px; white-space: nowrap; font-weight: 700;">${booking.time}-${endTimeStr}</span>`;
@@ -1360,7 +1397,6 @@ function renderSchedule() {
 
                 rowElement.appendChild(block);
             } else {
-                // Free slot (spans 1 column)
                 const block = document.createElement("div");
                 const slotTimeStr = getSlotTime(i);
                 block.className = "time-block free";
@@ -1368,9 +1404,8 @@ function renderSchedule() {
                 block.title = `เวลา ${slotTimeStr} น. (ว่าง - คลิกเพื่อจองเลย)`;
                 block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">ว่าง</span>`;
 
-                const currentSlotTime = slotTimeStr;
                 block.addEventListener("click", () => {
-                    handleQuickBook(selectedDate, currentSlotTime, zoneType);
+                    handleQuickBook(selectedDate, slotTimeStr, zoneType);
                 });
 
                 rowElement.appendChild(block);
@@ -1379,15 +1414,69 @@ function renderSchedule() {
         }
     };
 
-    renderRowBlocks(rowRegular, regularSlots, 'regular');
-    renderRowBlocks(rowPrivate, privateSlots, 'private');
+    // 2. Render Timeline Blocks
+    if (type === 'boardgame') {
+        const rowRegular = document.getElementById("timeline-row-boardgame-regular");
+        const rowPrivate = document.getElementById("timeline-row-boardgame-private");
+
+        if (rowRegular && rowPrivate) {
+            rowRegular.innerHTML = '';
+            rowPrivate.innerHTML = '';
+
+            const isClosed = new Date(selectedDate).getDay() === 4;
+
+            // Slots
+            const regularSlots = Array(18).fill(null);
+            const privateSlots = Array(18).fill(null);
+
+            activeBookings.forEach(booking => {
+                const { startSlot, endSlot } = getBookingSlotRange(booking);
+                // Both 'private' and 'dnd' roomTypes occupy the Private room timeline row
+                const slotsArray = booking.roomType === 'regular' ? regularSlots : privateSlots;
+                for (let i = startSlot; i < endSlot; i++) {
+                    if (i < 18) {
+                        slotsArray[i] = booking;
+                    }
+                }
+            });
+
+            renderRowBlocks(rowRegular, regularSlots, 'regular', isClosed, selectedDate);
+            renderRowBlocks(rowPrivate, privateSlots, 'private', isClosed, selectedDate);
+        }
+    } else {
+        // dnd type
+        const rowDnd = document.getElementById("timeline-row-dnd-private");
+        if (rowDnd) {
+            rowDnd.innerHTML = '';
+            const isClosed = new Date(selectedDate).getDay() === 4;
+
+            const dndSlots = Array(18).fill(null);
+            activeBookings.forEach(booking => {
+                // Both 'dnd' and 'private' roomTypes occupy the D&D private room timeline row
+                if (booking.roomType === 'dnd' || booking.roomType === 'private') {
+                    const { startSlot, endSlot } = getBookingSlotRange(booking);
+                    for (let i = startSlot; i < endSlot; i++) {
+                        if (i < 18) {
+                            dndSlots[i] = booking;
+                        }
+                    }
+                }
+            });
+
+            renderRowBlocks(rowDnd, dndSlots, 'dnd', isClosed, selectedDate);
+        }
+    }
 
     // 3. Render Detailed Queue Cards for Selected Date
-    const queueListHolder = document.getElementById("schedule-queue-list");
+    const queueListHolder = document.getElementById(`schedule-${type}-queue-list`);
     if (!queueListHolder) return;
 
-    // Filter, sort bookings
-    const activeDetails = activeBookings.slice();
+    queueListHolder.innerHTML = '';
+
+    // Filter, sort bookings based on tab type
+    const activeDetails = activeBookings.filter(b => 
+        type === 'boardgame' ? (b.roomType === 'regular' || b.roomType === 'private') : b.roomType === 'dnd'
+    );
     activeDetails.sort((a, b) => {
         const timeA = a.time.split(":").map(Number);
         const timeB = b.time.split(":").map(Number);
@@ -1395,10 +1484,11 @@ function renderSchedule() {
     });
 
     if (activeDetails.length === 0) {
+        const textEmpty = type === 'boardgame' ? 'วันนี้ยังไม่มีคิวจองเล่นบอร์ดเกม' : 'วันนี้ยังไม่มีคิวจองเล่น D&D';
         queueListHolder.innerHTML = `
-            <div class="empty-queue" style="grid-column: 1 / -1; padding: 30px; border: 1.5px dashed var(--color-border); border-radius: var(--border-radius-md);">
-                <i class="fas fa-calendar-check" style="font-size: 28px; color: var(--color-primary-light); margin-bottom: 8px;"></i>
-                <p style="font-family: var(--font-heading); font-size: 14px;">ยังไม่มีคิวจองในวันที่เลือก</p>
+            <div class="empty-queue" style="grid-column: 1/-1; padding: 30px;">
+                <i class="fas fa-calendar-check" style="font-size: 32px; color: var(--color-primary-light); margin-bottom: 8px;"></i>
+                <p style="font-family: var(--font-heading); font-size: 14px; font-weight:600;">${textEmpty}</p>
                 <p style="font-size: 11px; color: var(--color-primary);">คุณสามารถกดจองคิวเป็นคิวแรกของวันนี้ได้ทันที!</p>
             </div>
         `;
@@ -1420,7 +1510,7 @@ function renderSchedule() {
             badgeClass = 'badge-active';
         }
 
-        const areaName = booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)';
+        const areaName = booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)');
         const codeText = booking.bookingCode ? `${booking.bookingCode.slice(0, 5)}***` : 'LM-*****';
 
         card.innerHTML = `
@@ -1465,42 +1555,69 @@ function handleQuickBook(date, time, zone) {
         bookingDateInput.dispatchEvent(new Event('change'));
     }
 
-    // 3. Set time select
-    const bookingTimeSelect = document.getElementById("booking-time");
-    if (bookingTimeSelect) {
-        bookingTimeSelect.value = time;
-        bookingTimeSelect.dispatchEvent(new Event('change'));
-    }
+    // 3. Handle Mode and room selections
+    if (zone === 'dnd') {
+        const modeBtnDnd = document.getElementById("mode-dnd");
+        if (modeBtnDnd) {
+            modeBtnDnd.click();
+        }
 
-    // 4. Set room type
-    let radioId = "room-regular-hourly";
-    if (zone === 'private') {
-        radioId = "room-private-hourly";
-    }
-    const radio = document.getElementById(radioId);
-    if (radio) {
-        radio.checked = true;
-        radio.dispatchEvent(new Event('change'));
+        const dndSessionSelect = document.getElementById("booking-dnd-session");
+        if (dndSessionSelect) {
+            // Find closest D&D 4-hour round
+            const startHour = parseInt(time.split(":")[0]) || 15;
+            if (startHour <= 17) {
+                dndSessionSelect.value = "15:00-19:00";
+            } else {
+                dndSessionSelect.value = "20:00-24:00";
+            }
+            dndSessionSelect.dispatchEvent(new Event('change'));
+        }
+    } else {
+        const modeBtnBoardgame = document.getElementById("mode-boardgame");
+        if (modeBtnBoardgame) {
+            modeBtnBoardgame.click();
+        }
 
-        // Update styled selected class on cards
-        const roomCards = document.querySelectorAll(".room-type-card");
-        roomCards.forEach(c => c.classList.remove("selected"));
-        const parentCard = radio.closest(".room-type-card");
-        if (parentCard) {
-            parentCard.classList.add("selected");
+        // Set time select
+        const bookingTimeSelect = document.getElementById("booking-time");
+        if (bookingTimeSelect) {
+            bookingTimeSelect.value = time;
+            bookingTimeSelect.dispatchEvent(new Event('change'));
+        }
+
+        // Set room type radio
+        let radioId = "room-regular-hourly";
+        if (zone === 'private') {
+            radioId = "room-private-hourly";
+        }
+        const radio = document.getElementById(radioId);
+        if (radio) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change'));
+
+            // Update styled selected class on cards
+            const roomCards = document.querySelectorAll(".room-type-card");
+            roomCards.forEach(c => c.classList.remove("selected"));
+            const parentCard = radio.closest(".room-type-card");
+            if (parentCard) {
+                parentCard.classList.add("selected");
+            }
         }
     }
 
-    // 5. Scroll to booking form
+    // 4. Scroll to booking form
     const bookingForm = document.getElementById("booking-form");
     if (bookingForm) {
         setTimeout(() => {
             bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
+        }, 150);
     }
 
-    // 6. Show toast alert
-    const zoneName = zone === 'private' ? 'ห้อง Private (รายชั่วโมง)' : 'โซนปกติ (รายชั่วโมง)';
+    // 5. Show toast alert
+    let zoneName = 'โซนปกติ (รายชั่วโมง)';
+    if (zone === 'private') zoneName = 'ห้อง Private (รายชั่วโมง)';
+    else if (zone === 'dnd') zoneName = 'ห้อง Private D&D';
     showToast(`เลือกวันที่ ${formatThaiDate(date)} เวลา ${time} น. (${zoneName}) ให้เรียบร้อยแล้ว กรอกชื่อและจองคิวได้เลย!`, "success");
 }
 
@@ -1512,3 +1629,56 @@ window.updatePrivateRoomAvailability = updatePrivateRoomAvailability;
 window.initScheduleTab = initScheduleTab;
 window.renderSchedule = renderSchedule;
 window.handleQuickBook = handleQuickBook;
+
+// Initialize Parking & directions modal
+function initParkingModal() {
+    const parkingMenuBtn = document.getElementById("parking-menu-btn");
+    const parkingModal = document.getElementById("parking-modal");
+    const closeParkingBtn = document.getElementById("close-parking-modal");
+    
+    if (parkingMenuBtn && parkingModal) {
+        parkingMenuBtn.addEventListener("click", () => {
+            parkingModal.style.display = "flex";
+            document.body.style.overflow = "hidden"; // Prevent background scroll
+        });
+    }
+    
+    if (closeParkingBtn && parkingModal) {
+        closeParkingBtn.addEventListener("click", () => {
+            parkingModal.style.display = "none";
+            document.body.style.overflow = ""; // Re-enable background scroll
+        });
+    }
+
+    // Close parking modal on clicking outside the box
+    if (parkingModal) {
+        parkingModal.addEventListener("click", (e) => {
+            if (e.target === parkingModal) {
+                parkingModal.style.display = "none";
+                document.body.style.overflow = "";
+            }
+        });
+    }
+}
+
+// Global lightbox functions
+window.openLightbox = function(src) {
+    const lightbox = document.getElementById("parking-lightbox");
+    const img = document.getElementById("lightbox-img");
+    if (lightbox && img) {
+        // Only open if the image has loaded successfully
+        const activeImg = document.querySelector(`.parking-img-container img[src="${src}"]`);
+        if (activeImg && activeImg.style.display !== 'none') {
+            img.src = src;
+            lightbox.style.display = "flex";
+        }
+    }
+};
+
+window.closeLightbox = function() {
+    const lightbox = document.getElementById("parking-lightbox");
+    if (lightbox) {
+        lightbox.style.display = "none";
+    }
+};
+

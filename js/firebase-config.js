@@ -23,9 +23,9 @@ window.firebaseConfig = {
 // 3. Create a template -> Get TEMPLATE_ID
 // 4. Go to Account -> API Keys -> Get PUBLIC_KEY
 window.emailConfig = {
-    publicKey: "MuCIs-lsUtiucErPO",   // Replace with your Public Key
-    serviceId: "service_7k7er7j",   // Replace with your Service ID
-    templateId: "template_4ktcj21"  // Replace with your Template ID
+    publicKey: "J-tvuQR43L3ydZYl1",   // Replace with your Public Key
+    serviceId: "service_88p1ugq",   // Replace with your Service ID
+    templateId: "template_f0viwvj"  // Replace with your Template ID
 };
 
 /**

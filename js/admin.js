@@ -216,7 +216,8 @@ function renderAdminDashboard() {
             areaBadge = '<span class="badge badge-room private">Private</span>';
         } else if (booking.roomType === 'dnd') {
             const dmLabel = booking.dndDmRequest === 'yes' ? 'D&D (DM ร้าน)' : 'D&D (DM เอง)';
-            areaBadge = `<span class="badge badge-room dnd" style="background-color: #582C83; color: white;">${dmLabel}</span>`;
+            const styleLabel = booking.dndPlayStyle ? `<div style="font-size:11px; margin-top:4px; color:#582C83; font-weight:600;"><i class="fas fa-dice-d20"></i> ${booking.dndPlayStyle}</div>` : '';
+            areaBadge = `<span class="badge badge-room dnd" style="background-color: #582C83; color: white;">${dmLabel}</span>${styleLabel}`;
         }
             
         // Construct Action Buttons
@@ -484,7 +485,7 @@ async function sendStatusEmailNotification(booking, newStatus) {
             date: formatThaiDate(booking.date),
             time: booking.time,
             players: booking.players,
-            room_type: booking.roomType === 'dnd' ? 'ห้อง Private D&D' : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
+            room_type: booking.roomType === 'dnd' ? `ห้อง Private D&D (${booking.dndPlayStyle || ''})` : (booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)'),
             price: booking.totalPrice
         };
 

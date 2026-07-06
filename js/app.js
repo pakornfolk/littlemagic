@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initBookingForm();
     initBookingLookup();
+    initScheduleTab();
     initQueueSubscription();
     displayDatabaseMode();
 
@@ -542,6 +543,11 @@ function initQueueSubscription() {
         // Update Private Room occupancy on selection cards
         updatePrivateRoomAvailability(bookings);
 
+        // Update interactive schedule tab if renderSchedule function exists
+        if (typeof renderSchedule === 'function') {
+            renderSchedule();
+        }
+
         // We filter queues for TODAY that are active ('pending', 'confirmed', 'active')
         const todayStr = new Date().toISOString().split("T")[0];
         
@@ -899,8 +905,433 @@ async function sendPendingBookingEmailToCustomer(booking) {
     }
 }
 
+// ==========================================================================
+// 7. Interactive Booking Schedule Tab Logic
+// ==========================================================================
+function initScheduleTab() {
+    const scheduleDateInput = document.getElementById("schedule-date");
+    if (!scheduleDateInput) return;
+
+    // Set initial date: Today (or tomorrow if today is Thursday)
+    const todayObj = new Date();
+    const todayStr = todayObj.toISOString().split("T")[0];
+    scheduleDateInput.min = todayStr;
+    
+    if (todayObj.getDay() === 4) { // Thursday
+        const tomorrowObj = new Date();
+        tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+        scheduleDateInput.value = tomorrowObj.toISOString().split("T")[0];
+    } else {
+        scheduleDateInput.value = todayStr;
+    }
+
+    // Bind change listener
+    scheduleDateInput.addEventListener("change", () => {
+        const dateVal = scheduleDateInput.value;
+        if (dateVal) {
+            const dayOfWeek = new Date(dateVal).getDay(); // 4 is Thursday
+            if (dayOfWeek === 4) {
+                showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
+                
+                // Revert to today (or tomorrow if today is Thursday)
+                const tObj = new Date();
+                const tStr = tObj.toISOString().split("T")[0];
+                if (tObj.getDay() === 4) {
+                    const tomObj = new Date();
+                    tomObj.setDate(tomObj.getDate() + 1);
+                    scheduleDateInput.value = tomObj.toISOString().split("T")[0];
+                } else {
+                    scheduleDateInput.value = tStr;
+                }
+            }
+        }
+        renderSchedule();
+    });
+
+    // Render schedule initially
+    renderSchedule();
+}
+
+function renderSchedule() {
+    const scheduleDateInput = document.getElementById("schedule-date");
+    if (!scheduleDateInput) return;
+    
+    const selectedDate = scheduleDateInput.value;
+    if (!selectedDate) return;
+
+    // Filter active bookings (pending, confirmed, active) for selectedDate
+    const activeBookings = cachedBookings.filter(b => 
+        b.date === selectedDate && 
+        (b.status === 'pending' || b.status === 'confirmed' || b.status === 'active')
+    );
+
+    // 1. Calculate & Render Vibe Meter
+    const vibeBadge = document.getElementById("vibe-badge");
+    const vibeText = document.getElementById("vibe-text");
+    const vibeGaugeFill = document.getElementById("vibe-gauge-fill");
+
+    if (vibeBadge && vibeText && vibeGaugeFill) {
+        const dayOfWeek = new Date(selectedDate).getDay();
+        if (dayOfWeek === 4) {
+            // Closed
+            vibeBadge.textContent = "ร้านปิดทำการ ❌";
+            vibeBadge.className = "badge badge-cancelled";
+            vibeBadge.style.backgroundColor = "";
+            vibeBadge.style.color = "";
+            vibeText.textContent = "วันนี้ร้านหยุดให้บริการประจำสัปดาห์ (วันพฤหัสบดี) เลือกวันถัดไปได้เลยนะ!";
+            vibeGaugeFill.style.width = "0%";
+            vibeGaugeFill.className = "vibe-gauge-fill";
+        } else {
+            const bookingCount = activeBookings.length;
+            let levelClass = "level-chill";
+            let widthPct = "15%";
+            let badgeTxt = "ชิลสบายๆ 🟢";
+            let descTxt = "ร้านค่อนข้างโล่ง เล่นบอร์ดเกมแนวไหนก็มีสมาธิ!";
+
+            if (bookingCount >= 2 && bookingCount <= 3) {
+                levelClass = "level-good";
+                widthPct = "45%";
+                badgeTxt = "กำลังสนุก 🟡";
+                descTxt = "บรรยากาศกำลังดี มีเสียงหัวเราะรอบโต๊ะเป็นกันเอง";
+            } else if (bookingCount >= 4 && bookingCount <= 5) {
+                levelClass = "level-lively";
+                widthPct = "75%";
+                badgeTxt = "ครึกครื้น 🟠";
+                descTxt = "ผู้เล่นเยอะ บรรยากาศบอร์ดเกมคาเฟ่เต็มพิกัด!";
+            } else if (bookingCount >= 6) {
+                levelClass = "level-peak";
+                widthPct = "100%";
+                badgeTxt = "ปาร์ตี้สุดเหวี่ยง 🔥";
+                descTxt = "คนแน่นร้าน! แนะนำรีบจองก่อนโต๊ะเต็ม";
+            }
+
+            vibeBadge.textContent = badgeTxt;
+            // Clear any inline styles to let CSS classes take over
+            vibeBadge.style.backgroundColor = "";
+            vibeBadge.style.color = "";
+            
+            if (bookingCount < 2) {
+                vibeBadge.className = "badge badge-active";
+            } else if (bookingCount <= 3) {
+                vibeBadge.className = "badge badge-pending";
+            } else if (bookingCount <= 5) {
+                vibeBadge.className = "badge badge-lively";
+            } else {
+                vibeBadge.className = "badge badge-cancelled";
+            }
+            
+            vibeText.textContent = descTxt;
+            vibeGaugeFill.className = `vibe-gauge-fill ${levelClass}`;
+            vibeGaugeFill.style.width = widthPct;
+        }
+    }
+
+    // 2. Render Timeline Blocks
+    const rowRegular = document.getElementById("timeline-row-regular");
+    const rowPrivate1 = document.getElementById("timeline-row-private1");
+    const rowPrivate2 = document.getElementById("timeline-row-private2");
+
+    if (!rowRegular || !rowPrivate1 || !rowPrivate2) return;
+
+    // Clear rows
+    rowRegular.innerHTML = '';
+    rowPrivate1.innerHTML = '';
+    rowPrivate2.innerHTML = '';
+
+    const dayOfWeek = new Date(selectedDate).getDay();
+    const isClosed = dayOfWeek === 4;
+
+    // Helper: format slot index to displayable time (HH:MM)
+    const getSlotTime = (index) => {
+        const mins = index * 30;
+        const h = Math.floor(mins / 60) + 15;
+        const m = mins % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    // Calculate booking overlap ranges
+    const regularBookings = activeBookings.filter(b => b.roomType === 'regular');
+    const privateBookings = activeBookings.filter(b => b.roomType === 'private');
+
+    // Helper to calculate slot occupancy [startSlot, endSlot]
+    const getBookingSlotRange = (booking) => {
+        const [h, m] = booking.time.split(":").map(Number);
+        const startMin = (h - 15) * 60 + m;
+        const durMin = (booking.duration === 'day') ? 540 : (booking.duration * 60);
+        const startSlot = Math.max(0, Math.floor(startMin / 30));
+        const endSlot = Math.min(18, Math.ceil((startMin + durMin) / 30) + 1);
+        return { startSlot, endSlot };
+    };
+
+    // Helper to calculate booking end time string (HH:MM)
+    const getBookingEndTime = (booking) => {
+        if (booking.duration === 'day') return '24:00';
+        const [h, m] = booking.time.split(":").map(Number);
+        const endHour = h + parseInt(booking.duration);
+        return `${String(endHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    // Initialize regular row (we just check if any active booking covers a slot)
+    const regularSlots = Array(18).fill(null);
+    regularBookings.forEach(booking => {
+        const { startSlot, endSlot } = getBookingSlotRange(booking);
+        for (let i = startSlot; i < endSlot; i++) {
+            if (!regularSlots[i]) {
+                regularSlots[i] = booking;
+            }
+        }
+    });
+
+    // Assign private bookings to Private Row 1 and Row 2 to resolve overlaps visually
+    const private1Slots = Array(18).fill(null);
+    const private2Slots = Array(18).fill(null);
+
+    // Sort private bookings by time to assign chronologically
+    privateBookings.sort((a, b) => {
+        const timeA = a.time.split(":").map(Number);
+        const timeB = b.time.split(":").map(Number);
+        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+    });
+
+    privateBookings.forEach(booking => {
+        const { startSlot, endSlot } = getBookingSlotRange(booking);
+        
+        // Try row 1 first
+        let fitsPrivate1 = true;
+        for (let i = startSlot; i < endSlot; i++) {
+            if (private1Slots[i]) {
+                fitsPrivate1 = false;
+                break;
+            }
+        }
+
+        if (fitsPrivate1) {
+            for (let i = startSlot; i < endSlot; i++) {
+                private1Slots[i] = booking;
+            }
+        } else {
+            // Try row 2
+            let fitsPrivate2 = true;
+            for (let i = startSlot; i < endSlot; i++) {
+                if (private2Slots[i]) {
+                    fitsPrivate2 = false;
+                    break;
+                }
+            }
+            if (fitsPrivate2) {
+                for (let i = startSlot; i < endSlot; i++) {
+                    private2Slots[i] = booking;
+                }
+            } else {
+                // If both rows are full, force assign to row 2 anyway
+                for (let i = startSlot; i < endSlot; i++) {
+                    private2Slots[i] = booking;
+                }
+            }
+        }
+    });
+
+    // Helper: render blocks into a row element
+    const renderRowBlocks = (rowElement, slotsArray, zoneType) => {
+        let i = 0;
+        while (i < 18) {
+            if (isClosed) {
+                const block = document.createElement("div");
+                block.className = "time-block occupied-pending";
+                block.style.gridColumn = `${i + 1}`;
+                block.style.cursor = "not-allowed";
+                block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">ปิด</span>`;
+                rowElement.appendChild(block);
+                i++;
+                continue;
+            }
+
+            const booking = slotsArray[i];
+            if (booking) {
+                // Find how many consecutive slots belong to this same booking ID
+                const startSlot = i;
+                const bookingId = booking.id;
+                while (i < 18 && slotsArray[i] && slotsArray[i].id === bookingId) {
+                    i++;
+                }
+                const endSlot = i; // i is now the slot index after the booking ends
+
+                const block = document.createElement("div");
+                let statusClass = "occupied-pending";
+                let statusName = "รออนุมัติ";
+                if (booking.status === 'confirmed') {
+                    statusClass = "occupied-confirmed";
+                    statusName = "จองแล้ว";
+                } else if (booking.status === 'active') {
+                    statusClass = "occupied-active";
+                    statusName = "กำลังเล่น";
+                }
+
+                const endTimeStr = getBookingEndTime(booking);
+                block.className = `time-block ${statusClass}`;
+                block.style.gridColumn = `${startSlot + 1} / ${endSlot + 1}`;
+                block.title = `จองแล้ว: ${booking.time} - ${endTimeStr} น. (คุณ ${maskName(booking.name)} - ${statusName})`;
+                
+                // Show text inside the bar: e.g. "18:00 - 20:00"
+                const spanColumns = endSlot - startSlot;
+                if (spanColumns >= 2) {
+                    block.innerHTML = `<span style="font-size: 11px; white-space: nowrap; font-weight: 700;">${booking.time}-${endTimeStr}</span>`;
+                } else {
+                    block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">จอง</span>`;
+                }
+                
+                rowElement.appendChild(block);
+            } else {
+                // Free slot (spans 1 column)
+                const block = document.createElement("div");
+                const slotTimeStr = getSlotTime(i);
+                block.className = "time-block free";
+                block.style.gridColumn = `${i + 1}`;
+                block.title = `เวลา ${slotTimeStr} น. (ว่าง - คลิกเพื่อจองเลย)`;
+                block.innerHTML = `<span style="font-size: 10px; font-weight: 700;">ว่าง</span>`;
+                
+                const currentSlotTime = slotTimeStr;
+                block.addEventListener("click", () => {
+                    handleQuickBook(selectedDate, currentSlotTime, zoneType);
+                });
+                
+                rowElement.appendChild(block);
+                i++;
+            }
+        }
+    };
+
+    renderRowBlocks(rowRegular, regularSlots, 'regular');
+    renderRowBlocks(rowPrivate1, private1Slots, 'private');
+    renderRowBlocks(rowPrivate2, private2Slots, 'private');
+
+    // 3. Render Detailed Queue Cards for Selected Date
+    const queueListHolder = document.getElementById("schedule-queue-list");
+    if (!queueListHolder) return;
+
+    // Filter, sort bookings
+    const activeDetails = activeBookings.slice();
+    activeDetails.sort((a, b) => {
+        const timeA = a.time.split(":").map(Number);
+        const timeB = b.time.split(":").map(Number);
+        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+    });
+
+    if (activeDetails.length === 0) {
+        queueListHolder.innerHTML = `
+            <div class="empty-queue" style="grid-column: 1 / -1; padding: 30px; border: 1.5px dashed var(--color-border); border-radius: var(--border-radius-md);">
+                <i class="fas fa-calendar-check" style="font-size: 28px; color: var(--color-primary-light); margin-bottom: 8px;"></i>
+                <p style="font-family: var(--font-heading); font-size: 14px;">ยังไม่มีคิวจองในวันที่เลือก</p>
+                <p style="font-size: 11px; color: var(--color-primary);">คุณสามารถกดจองคิวเป็นคิวแรกของวันนี้ได้ทันที!</p>
+            </div>
+        `;
+        return;
+    }
+
+    queueListHolder.innerHTML = '';
+    activeDetails.forEach(booking => {
+        const card = document.createElement("div");
+        card.className = `masked-booking-card border-${booking.status}`;
+
+        let statusText = 'รอร้านยืนยัน';
+        let badgeClass = 'badge-pending';
+        if (booking.status === 'confirmed') {
+            statusText = 'ยืนยันคิวแล้ว';
+            badgeClass = 'badge-confirmed';
+        } else if (booking.status === 'active') {
+            statusText = 'กำลังเล่นอยู่';
+            badgeClass = 'badge-active';
+        }
+
+        const areaName = booking.roomType === 'private' ? 'ห้อง Private (ส่วนตัว)' : 'โซนปกติ (Regular Area)';
+        const codeText = booking.bookingCode ? `${booking.bookingCode.slice(0, 5)}***` : 'LM-*****';
+
+        card.innerHTML = `
+            <div class="masked-card-header">
+                <span class="masked-card-title"><i class="fas fa-dice"></i> คุณ ${maskName(booking.name)}</span>
+                <span class="badge ${badgeClass}" style="font-size: 10px; padding: 3px 8px;">${statusText}</span>
+            </div>
+            <div class="masked-card-body">
+                <div class="masked-card-row">
+                    <span>เวลานัดหมาย</span>
+                    <span>${booking.time} น. (${getDurationText(booking.duration)})</span>
+                </div>
+                <div class="masked-card-row">
+                    <span>พื้นที่บริการ</span>
+                    <span>${areaName}</span>
+                </div>
+                <div class="masked-card-row">
+                    <span>จำนวนผู้เล่น</span>
+                    <span>${booking.players} คน</span>
+                </div>
+                <div class="masked-card-row" style="opacity: 0.7; font-size: 11px;">
+                    <span>รหัสจองอ้างอิง</span>
+                    <span>${codeText}</span>
+                </div>
+            </div>
+        `;
+        queueListHolder.appendChild(card);
+    });
+}
+
+function handleQuickBook(date, time, zone) {
+    // 1. Switch to booking tab
+    const bookingTabBtn = document.querySelector('[data-tab="booking"]');
+    if (bookingTabBtn) {
+        bookingTabBtn.click();
+    }
+
+    // 2. Set date input
+    const bookingDateInput = document.getElementById("booking-date");
+    if (bookingDateInput) {
+        bookingDateInput.value = date;
+        bookingDateInput.dispatchEvent(new Event('change'));
+    }
+
+    // 3. Set time select
+    const bookingTimeSelect = document.getElementById("booking-time");
+    if (bookingTimeSelect) {
+        bookingTimeSelect.value = time;
+        bookingTimeSelect.dispatchEvent(new Event('change'));
+    }
+
+    // 4. Set room type
+    let radioId = "room-regular-hourly";
+    if (zone === 'private') {
+        radioId = "room-private-hourly";
+    }
+    const radio = document.getElementById(radioId);
+    if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change'));
+        
+        // Update styled selected class on cards
+        const roomCards = document.querySelectorAll(".room-type-card");
+        roomCards.forEach(c => c.classList.remove("selected"));
+        const parentCard = radio.closest(".room-type-card");
+        if (parentCard) {
+            parentCard.classList.add("selected");
+        }
+    }
+
+    // 5. Scroll to booking form
+    const bookingForm = document.getElementById("booking-form");
+    if (bookingForm) {
+        setTimeout(() => {
+            bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    // 6. Show toast alert
+    const zoneName = zone === 'private' ? 'ห้อง Private (รายชั่วโมง)' : 'โซนปกติ (รายชั่วโมง)';
+    showToast(`เลือกวันที่ ${formatThaiDate(date)} เวลา ${time} น. (${zoneName}) ให้เรียบร้อยแล้ว กรอกชื่อและจองคิวได้เลย!`, "success");
+}
+
 // Bind utilities to window
 window.showToast = showToast;
 window.formatThaiDate = formatThaiDate;
 window.getDurationText = getDurationText;
 window.updatePrivateRoomAvailability = updatePrivateRoomAvailability;
+window.initScheduleTab = initScheduleTab;
+window.renderSchedule = renderSchedule;
+window.handleQuickBook = handleQuickBook;

@@ -84,6 +84,9 @@
             <button class="tab-btn active" data-tab="booking">
                 <i class="fas fa-calendar-plus"></i> จองโต๊ะเล่นเกม
             </button>
+            <button class="tab-btn" data-tab="schedule">
+                <i class="fas fa-calendar-alt"></i> ตารางคิว
+            </button>
             <button class="tab-btn" data-tab="lookup">
                 <i class="fas fa-search"></i> ตรวจสอบ / ยกเลิกคิว
             </button>
@@ -96,7 +99,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-dice"></i> กรอกข้อมูลการจองคิว</h2>
-                        <span style="font-size: 13px; color: var(--color-primary);">*ต้องกรอกทุกช่อง</span>
+                        <span style="font-size: 13px; color: var(--color-primary);">กรุณาตรวจสอบตารางคิวก่อนทำการจอง</span>
                     </div>
                     
                     <form id="booking-form">
@@ -113,7 +116,7 @@
 
                         <div class="form-group">
                             <label for="booking-email"><i class="fas fa-envelope"></i> อีเมลสำหรับรับแจ้งเตือนสถานะคิว</label>
-                            <input type="email" id="booking-email" class="form-input" placeholder="เช่น littlemagic.official2025@gmail.com" required>
+                            <input type="email" id="booking-email" class="form-input" placeholder="เช่น customer@gmail.com" required>
                             <span style="font-size: 11px; color: var(--color-primary); margin-top: 4px; display: flex; align-items: flex-start; gap: 6px; text-align: left;">
                                 <i class="fas fa-info-circle" style="margin-top: 3px; flex-shrink: 0;"></i>
                                 <span>หากไม่พบอีเมลแจ้งเตือน 1-2 นาที อีเมลอาจจะตกหล่นไปอยู่ในกล่อง <strong>"จดหมายขยะ (Spam / Junk)"</strong> หรือสอบถามสถานะการจองทางไลน์ ได้เลยครับ</span>
@@ -187,7 +190,7 @@
                         <div class="form-group-row">
                             <div class="form-group">
                                 <label for="booking-players"><i class="fas fa-users"></i> จำนวนผู้เล่น (คน)</label>
-                                <input type="number" id="booking-players" class="form-input" min="2" max="20" value="4" required>
+                                <input type="number" id="booking-players" class="form-input" min="2" max="20" value="4" required placeholder="เช่น 4">
                             </div>
                             <div class="form-group" id="duration-wrapper">
                                 <label for="booking-duration" id="duration-label"><i class="fas fa-hourglass-half"></i> จำนวนชั่วโมงที่เล่น</label>
@@ -280,6 +283,113 @@
                 <!-- Results wrapper -->
                 <div id="lookup-results" class="my-bookings-list">
                     <!-- Dynamic rendering of booking history -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Queue Schedule and Cafe Status -->
+        <div id="schedule-tab" class="tab-content">
+            <div class="card schedule-container">
+                <div class="card-header" style="border-bottom: none; margin-bottom: 20px;">
+                    <h2><i class="fas fa-calendar-day" style="color: var(--color-accent-magic);"></i> ตารางคิว</h2>
+                    <p style="font-size: 14px; color: var(--color-primary); margin-top: 6px;">
+                        เช็คคิวจองที่ได้รับการยืนยันและประเมินระดับความหนาแน่นของร้านก่อนเลือกเวลาจองได้สดๆ ที่นี่!
+                    </p>
+                </div>
+
+                <!-- Schedule Header Controls -->
+                <div class="schedule-controls-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="schedule-date"><i class="far fa-calendar-alt"></i> เลือกวันที่ต้องการดูตารางคิว</label>
+                        <input type="date" id="schedule-date" class="form-input" style="height: 50px;">
+                    </div>
+                    
+                    <div class="vibe-meter-card">
+                        <div class="vibe-header">
+                            <span class="vibe-title"><i class="fas fa-magic"></i> บรรยากาศร้านประจำวัน</span>
+                            <span id="vibe-badge" class="badge">กำลังวิเคราะห์...</span>
+                        </div>
+                        <div class="vibe-gauge-wrapper">
+                            <div class="vibe-gauge-bar">
+                                <div id="vibe-gauge-fill" class="vibe-gauge-fill" style="width: 0%;"></div>
+                            </div>
+                            <div id="vibe-text" class="vibe-text">กำลังวิเคราะห์ข้อมูลคิวเพื่อตรวจสอบระดับบรรยากาศร้าน...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Visual Representation -->
+                <div class="timeline-visual-card">
+                    <div class="timeline-visual-header">
+                        <h3><i class="fas fa-clock"></i> ผังเวลาจองของร้าน (15:00 - 24:00 น.)</h3>
+                        <span style="font-size: 11px; color: var(--color-primary);">*คลิกที่ "ช่องว่าง" เพื่อดำเนินการจองช่วงเวลานั้นทันที</span>
+                    </div>
+                    
+                    <div class="timeline-scroll-container">
+                        <div class="timeline-wrapper">
+                            <!-- Timeline Header: hours columns -->
+                            <div class="timeline-hours">
+                                <div style="grid-column: 1;">15:00</div>
+                                <div style="grid-column: 2;">15:30</div>
+                                <div style="grid-column: 3;">16:00</div>
+                                <div style="grid-column: 4;">16:30</div>
+                                <div style="grid-column: 5;">17:00</div>
+                                <div style="grid-column: 6;">17:30</div>
+                                <div style="grid-column: 7;">18:00</div>
+                                <div style="grid-column: 8;">18:30</div>
+                                <div style="grid-column: 9;">19:00</div>
+                                <div style="grid-column: 10;">19:30</div>
+                                <div style="grid-column: 11;">20:00</div>
+                                <div style="grid-column: 12;">20:30</div>
+                                <div style="grid-column: 13;">21:00</div>
+                                <div style="grid-column: 14;">21:30</div>
+                                <div style="grid-column: 15;">22:00</div>
+                                <div style="grid-column: 16;">22:30</div>
+                                <div style="grid-column: 17;">23:00</div>
+                                <div style="grid-column: 18;">23:30</div>
+                            </div>
+                            
+                            <!-- Row 1: Regular Zone -->
+                            <div class="timeline-row">
+                                <div class="timeline-label"><i class="fas fa-couch"></i> โซนปกติ</div>
+                                <div class="timeline-grid-row" id="timeline-row-regular">
+                                    <!-- Dynamic 18 block cells representing 30 mins slot -->
+                                </div>
+                            </div>
+                            
+                            <!-- Row 2: Private Room 1 -->
+                            <div class="timeline-row">
+                                <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private 1</div>
+                                <div class="timeline-grid-row" id="timeline-row-private1">
+                                    <!-- Dynamic 18 block cells -->
+                                </div>
+                            </div>
+
+                            <!-- Row 3: Private Room 2 -->
+                            <div class="timeline-row">
+                                <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private 2</div>
+                                <div class="timeline-grid-row" id="timeline-row-private2">
+                                    <!-- Dynamic 18 block cells -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline Legends -->
+                    <div class="timeline-legend">
+                        <div class="legend-item"><span class="legend-dot status-free"></span> ช่องว่าง (คลิกจองได้)</div>
+                        <div class="legend-item"><span class="legend-dot status-pending"></span> รอร้านยืนยันคิว</div>
+                        <div class="legend-item"><span class="legend-dot status-confirmed"></span> ยืนยันคิวจองแล้ว</div>
+                        <div class="legend-item"><span class="legend-dot status-active"></span> กำลังเล่นอยู่</div>
+                    </div>
+                </div>
+
+                <!-- Detailed Queue Cards -->
+                <div class="detailed-queue-section">
+                    <h3><i class="fas fa-list-ul"></i> รายละเอียดคิวจองที่ยืนยันแล้วและกำลังดำเนินการ</h3>
+                    <div id="schedule-queue-list" class="schedule-queue-list-container">
+                        <!-- Dynamic rendered list of masked queue bookings -->
+                    </div>
                 </div>
             </div>
         </div>

@@ -25,8 +25,64 @@ window.firebaseConfig = {
 window.emailConfig = {
     publicKey: "J-tvuQR43L3ydZYl1",   // Replace with your Public Key
     serviceId: "service_88p1ugq",   // Replace with your Service ID
-    templateId: "template_y11pf7a"  // Replace with your Template ID
+    templateId: "template_y11pf7a",  // Replace with your Template ID
+    
+    // ตั้งค่าโหมดทดสอบ (Test Mode)
+    // - ระบบจะเช็คอัตโนมัติ: ถ้าเปิดในเครื่องคอม (localhost, 127.0.0.1 หรือเปิดจากไฟล์โดยตรง) จะเป็นโหมดทดสอบ (ดักจับอีเมล)
+    //   แต่ถ้าอัปขึ้น Git/โฮสติ้งจริงแล้ว จะปิดโหมดทดสอบและส่งอีเมลจริงออกไปโดยอัตโนมัติ (Auto-Connect)
+    testMode: window.location.hostname === "localhost" || 
+              window.location.hostname === "127.0.0.1" || 
+              window.location.protocol === "file:"
 };
+
+// ดักจับการทำงานของ EmailJS เมื่อเปิด Test Mode
+(function() {
+    if (window.emailConfig && window.emailConfig.testMode) {
+        // หาก EmailJS SDK ไม่โหลด (เช่น ทำงานแบบออฟไลน์) ให้สร้าง mock object ขึ้นมาแทนที่
+        if (typeof window.emailjs === 'undefined') {
+            window.emailjs = {
+                init: function(options) {
+                    console.log("%c[EmailJS Mock] Initialized with config:", "color: #ff9800; font-weight: bold;", options);
+                },
+                send: function(serviceId, templateId, templateParams) {
+                    return new Promise((resolve) => {
+                        console.log("%c[EmailJS Intercepted (Offline Mock)]", "color: #ff9800; font-weight: bold; font-size: 13px;", {
+                            serviceId,
+                            templateId,
+                            templateParams
+                        });
+                        
+                        const msg = `[Test Mode] Intercepted email to ${templateParams.to_email || 'unknown'} (Status: ${templateParams.status_text || 'none'})`;
+                        if (window.showToast) {
+                            window.showToast(msg, "info");
+                        }
+                        
+                        resolve({ status: 200, text: "OK" });
+                    });
+                }
+            };
+        } else {
+            // หาก EmailJS SDK โหลดมาแล้ว ให้ override ฟังก์ชัน send เพื่อดักไม่ให้ส่งจริง
+            const originalSend = window.emailjs.send;
+            window.emailjs.send = function(serviceId, templateId, templateParams) {
+                return new Promise((resolve) => {
+                    console.log("%c[EmailJS Intercepted]", "color: #ff9800; font-weight: bold; font-size: 13px;", {
+                        serviceId,
+                        templateId,
+                        templateParams
+                    });
+                    
+                    const msg = `[Test Mode] Intercepted email to ${templateParams.to_email || 'unknown'} (Status: ${templateParams.status_text || 'none'})`;
+                    if (window.showToast) {
+                        window.showToast(msg, "info");
+                    }
+                    
+                    resolve({ status: 200, text: "OK (Intercepted)" });
+                });
+            };
+        }
+    }
+})();
 
 /**
  * Checks if the user has replaced the placeholder values with actual Firebase credentials.

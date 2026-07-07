@@ -80,7 +80,9 @@
                     </div>
                 </a>
                 <div class="stat-card" id="parking-menu-btn" style="cursor: pointer;">
-                    <div class="stat-icon" style="background-color: rgba(224, 122, 95, 0.1); color: var(--color-accent-magic);"><i class="fas fa-route"></i></div>
+                    <div class="stat-icon"
+                        style="background-color: rgba(224, 122, 95, 0.1); color: var(--color-accent-magic);"><i
+                            class="fas fa-route"></i></div>
                     <div class="stat-info">
                         <h3>การเดินทาง & ที่จอดรถ</h3>
                         <p>ดูรูปภาพแผนที่และจุดจอดรถ</p>
@@ -116,9 +118,12 @@
                         style="border-bottom: none; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
                         <h2 style="margin: 0; font-size: 22px; display: flex; align-items: center; gap: 10px;"><i
                                 class="fas fa-dice" style="color: var(--color-accent-magic);"></i> กรอกข้อมูลการจอง</h2>
-                        <p style="font-size: 13px; color: var(--color-primary); margin: 0; line-height: 1.5;">
-                            กรุณาตรวจสอบตารางคิวก่อนทำการจอง
-                        </p>
+                    </div>
+
+                    <!-- กล่องแนะนำให้เช็คตารางคิวก่อนจอง -->
+                    <div style="background: rgba(224, 122, 95, 0.08); border: 1.5px solid var(--color-accent-magic); padding: 14px; border-radius: var(--border-radius-sm); margin-bottom: 20px; font-size: 13.5px; font-weight: 600; color: var(--color-primary-dark); display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-exclamation-circle" style="color: var(--color-accent-magic); font-size: 16px;"></i> 
+                        <span>แนะนำ: กรุณาคลิกเลือกตรวจสอบตารางคิวว่างที่แท็บด้านบน ก่อนทำการกรอกจองคิวนะครับ</span>
                     </div>
 
                     <form id="booking-form">
@@ -204,8 +209,10 @@
                         </div>
 
                         <!-- Dynamic D&D Options (hidden by default) -->
-                        <div id="dnd-options-wrapper" style="display: none; margin-top: 15px; margin-bottom: 20px; padding: 20px; background-color: rgba(88, 44, 131, 0.08); border: 1.5px solid var(--color-accent-magic); border-radius: var(--border-radius-sm);">
-                            <h4 style="color: #8c52ff; margin-top: 0; margin-bottom: 12px; font-family: var(--font-heading); display: flex; align-items: center; gap: 8px;">
+                        <div id="dnd-options-wrapper"
+                            style="display: none; margin-top: 15px; margin-bottom: 20px; padding: 20px; background-color: rgba(88, 44, 131, 0.08); border: 1.5px solid var(--color-accent-magic); border-radius: var(--border-radius-sm);">
+                            <h4
+                                style="color: #8c52ff; margin-top: 0; margin-bottom: 12px; font-family: var(--font-heading); display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-dice-d20"></i> รายละเอียด และเงื่อนไขการเล่น D&D
                             </h4>
                             <div style="font-size: 13px; line-height: 1.6; color: var(--color-primary-dark);">
@@ -213,24 +220,44 @@
                                     ⚠️ ต้องจองคิวล่วงหน้าอย่างน้อย 2 วันนะคะ
                                 </p>
                                 <ul style="margin: 8px 0; padding-left: 0; list-style-type: none;">
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">💵</span> <strong>ราคา:</strong> 250 บาท / คน / Session (❌ ไม่มีมัดจำ)</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">🌳</span> <strong>จำนวนผู้เล่น:</strong> เริ่มต้น 4 - 6 คน / Session</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">⏰</span> <strong>ระยะเวลา:</strong> Session ละ 4 ชั่วโมง</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">👨🏻</span> มี Dungeon Master (DM) มืออาชีพจัดเตรียมอุปกรณ์ให้ครบถ้วน!</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">🟤</span> ไม่เคยเล่นมาก่อน หรือมือใหม่ก็เล่นได้</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">⚜️</span> เล่นแบบจักรวาลร้าน (ไม่ต้องเตรียมอะไรมาเลย)</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">❗️</span> <em>หากต้องการเล่นแบบ One-shot แจ้งตอนจองคิว (พิมพ์ใส่ในช่องหมายเหตุ) ได้เลยนะคะ</em></li>
-                                    <li style="margin-bottom: 6px; color: var(--color-status-cancelled);"><span style="display: inline-block; width: 22px;">❌</span> <strong>งดจองคิว:</strong> วันจันทร์ และ วันพฤหัสบดี</li>
-                                    <li style="margin-bottom: 6px;"><span style="display: inline-block; width: 22px;">❌</span> ทางร้านไม่มีบริการเล่น D&D แบบออนไลน์ (เฉพาะหน้าร้านเท่านั้น)</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">💵</span> <strong>ราคา:</strong>
+                                        250 บาท / คน / Session (❌ ไม่มีมัดจำ)</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">🌳</span>
+                                        <strong>จำนวนผู้เล่น:</strong> เริ่มต้น 4 - 6 คน / Session</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">⏰</span>
+                                        <strong>ระยะเวลา:</strong> Session ละ 4 ชั่วโมง</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">👨🏻</span> มี Dungeon Master
+                                        (DM) มืออาชีพจัดเตรียมอุปกรณ์ให้ครบถ้วน!</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">🟤</span> ไม่เคยเล่นมาก่อน
+                                        หรือมือใหม่ก็เล่นได้</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">⚜️</span> เล่นแบบจักรวาลร้าน
+                                        (ไม่ต้องเตรียมอะไรมาเลย)</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">❗️</span> <em>หากต้องการเล่นแบบ
+                                            One-shot แจ้งตอนจองคิว (พิมพ์ใส่ในช่องหมายเหตุ) ได้เลยนะคะ</em></li>
+                                    <li style="margin-bottom: 6px; color: var(--color-status-cancelled);"><span
+                                            style="display: inline-block; width: 22px;">❌</span>
+                                        <strong>งดจองคิว:</strong> วันจันทร์ และ วันพฤหัสบดี</li>
+                                    <li style="margin-bottom: 6px;"><span
+                                            style="display: inline-block; width: 22px;">❌</span> ทางร้านไม่มีบริการเล่น
+                                        D&D แบบออนไลน์ (เฉพาะหน้าร้านเท่านั้น)</li>
                                 </ul>
                             </div>
                         </div>
 
                         <div class="form-group-row">
-                             <div class="form-group">
+                            <div class="form-group">
                                 <label for="booking-date"><i class="far fa-calendar-alt"></i> วันที่ต้องการเล่น</label>
                                 <input type="date" id="booking-date" class="form-input" required>
-                                <span style="font-size: 11px; color: var(--color-status-cancelled); margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-circle"></i> ร้านหยุดให้บริการทุกวันพฤหัสบดี</span>
+                                <span
+                                    style="font-size: 11px; color: var(--color-status-cancelled); margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;"><i
+                                        class="fas fa-exclamation-circle"></i> ร้านหยุดให้บริการทุกวันพฤหัสบดี</span>
                             </div>
                             <div class="form-group" id="booking-time-wrapper">
                                 <label for="booking-time"><i class="far fa-clock"></i> เวลาเช็คอินเข้าร้าน</label>
@@ -318,8 +345,13 @@
                         <div id="rules-general">
                             <h3><i class="fas fa-exclamation-circle"></i> กฎและเงื่อนไขการจองคิว</h3>
                             <ul>
-                                <li><strong>ยกเลิกได้ล่วงหน้า:</strong> ผู้ใช้งานสามารถกดยกเลิกการจองได้ด้วยตัวเองก่อนเวลาจองจริง 1 วัน (24 ชั่วโมงขึ้นไป)</li>
-                                <li><strong>การรักษาสิทธิ์คิว:</strong> เพื่อการจัดเตรียมบอร์ดเกมและเริ่มเล่นได้เต็มชั่วโมง แนะนำเดินทางมาถึงร้านล่วงหน้าประมาณ 5-10 นาที นะคะ (หรือหากมีเหตุที่ทำให้มาเลท สามารถทักแจ้งทางร้านไว้ได้เลยค่ะ)</li>
+                                <li><strong>ยกเลิกได้ล่วงหน้า:</strong>
+                                    ผู้ใช้งานสามารถกดยกเลิกการจองได้ด้วยตัวเองก่อนเวลาจองจริง 1 วัน (24 ชั่วโมงขึ้นไป)
+                                </li>
+                                <li><strong>การรักษาสิทธิ์คิว:</strong>
+                                    เพื่อการจัดเตรียมบอร์ดเกมและเริ่มเล่นได้เต็มชั่วโมง
+                                    แนะนำเดินทางมาถึงร้านล่วงหน้าประมาณ 5-10 นาที นะคะ (หรือหากมีเหตุที่ทำให้มาเลท
+                                    สามารถทักแจ้งทางร้านไว้ได้เลยค่ะ)</li>
                                 <li><strong>ราคาค่าบริการ:</strong>
                                     <ul>
                                         <li>ห้องปกติ: รายชั่วโมง 40 บาท/คน/ชม. (เหมารายวัน 150 บาท/คน)</li>
@@ -327,15 +359,19 @@
                                         <li>*ระบบคำนวณราคาอัตโนมัติ โดยเลือกเรทราคาที่คุ้มค่าที่สุดให้ลูกค้าเสมอ!</li>
                                     </ul>
                                 </li>
-                                <li><strong>สอบถามข้อมูลเพิ่มเติม:</strong> เพิ่มเพื่อนทางไลน์ได้ตลอด 24 ชั่วโมงที่ Line ID: @843audre</li>
+                                <li><strong>สอบถามข้อมูลเพิ่มเติม:</strong> เพิ่มเพื่อนทางไลน์ได้ตลอด 24 ชั่วโมงที่ Line
+                                    ID: @843audre</li>
                             </ul>
                         </div>
                         <div id="rules-dnd-styles" style="display: none; margin-top: 15px;">
                             <h3><i class="fas fa-dice"></i> รายละเอียดรูปแบบการเล่น</h3>
                             <ul>
-                                <li><strong>แบบ One shot:</strong> จะมีเนื้อเรื่องแบบตอนเดียวจบคล้ายภาพยนตร์ 1 เรื่อง จบใน 1 Session</li>
-                                <li><strong>แบบ Campaign:</strong> จะมีเนื้อเรื่องยาวต่อเนื่องหลายตอน และเป็นการเล่นต่อเนื่องยาวนานหลาย Session คล้ายซีรีส์</li>
-                                <li><strong>แบบ Module หนังสือต่างๆ:</strong> เป็นการผจญภัยตามเนื้อเรื่องจากหนังสือแคมเปญหลักที่เป็นทางการของ D&D Official</li>
+                                <li><strong>แบบ One shot:</strong> จะมีเนื้อเรื่องแบบตอนเดียวจบคล้ายภาพยนตร์ 1 เรื่อง
+                                    จบใน 1 Session</li>
+                                <li><strong>แบบ Campaign:</strong> จะมีเนื้อเรื่องยาวต่อเนื่องหลายตอน
+                                    และเป็นการเล่นต่อเนื่องยาวนานหลาย Session คล้ายซีรีส์</li>
+                                <li><strong>แบบ Module หนังสือต่างๆ:</strong>
+                                    เป็นการผจญภัยตามเนื้อเรื่องจากหนังสือแคมเปญหลักที่เป็นทางการของ D&D Official</li>
                             </ul>
                         </div>
                     </div>
@@ -389,8 +425,10 @@
                         <i class="fas fa-search"></i> ค้นหา
                     </button>
                 </div>
-                <div style="display: flex; justify-content: center; margin-bottom: 20px; text-align: center; width: 100%;">
-                    <p style="font-size: 13px; color: var(--color-primary); margin: 0; line-height: 1.5; display: inline-flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap;">
+                <div
+                    style="display: flex; justify-content: center; margin-bottom: 20px; text-align: center; width: 100%;">
+                    <p
+                        style="font-size: 13px; color: var(--color-primary); margin: 0; line-height: 1.5; display: inline-flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap;">
                         <i class="fas fa-info-circle" style="color: var(--color-accent-magic);"></i>
                         <span>หากต้องการยกเลิกคิวในวันนัดคิว กรุณาติดต่อผ่านไลน์เพื่อทำการยกเลิก</span>
                     </p>
@@ -409,7 +447,8 @@
                 <div class="card-header"
                     style="border-bottom: none; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
                     <h2 style="margin: 0; font-size: 22px; display: flex; align-items: center; gap: 10px;"><i
-                            class="fas fa-chess-board" style="color: var(--color-accent-magic);"></i> เช็คคิวบอร์ดเกม</h2>
+                            class="fas fa-chess-board" style="color: var(--color-accent-magic);"></i> เช็คคิวบอร์ดเกม
+                    </h2>
                     <p style="font-size: 13px; color: var(--color-primary); margin: 0; line-height: 1.5;">
                         เลือกวัน เพื่อดูตารางคิวการจองเล่นบอร์ดเกมได้ที่นี่เลย!
                     </p>
@@ -555,7 +594,7 @@
                     <div class="timeline-scroll-container">
                         <div class="timeline-wrapper">
                             <!-- Timeline Header: hours columns -->
-                            <div class="timeline-hours">
+                            <div class="timeline-hours" style="grid-template-columns: repeat(19, 1fr);">
                                 <div style="grid-column: 1;">15:00</div>
                                 <div style="grid-column: 2;">15:30</div>
                                 <div style="grid-column: 3;">16:00</div>
@@ -574,12 +613,13 @@
                                 <div style="grid-column: 16;">22:30</div>
                                 <div style="grid-column: 17;">23:00</div>
                                 <div style="grid-column: 18;">23:30</div>
+                                <div style="grid-column: 19;">24:00</div>
                             </div>
 
                             <!-- Row 1: Private Room D&D -->
                             <div class="timeline-row">
                                 <div class="timeline-label"><i class="fas fa-door-closed"></i> ห้อง Private D&D</div>
-                                <div class="timeline-grid-row" id="timeline-row-dnd-private">
+                                <div class="timeline-grid-row" id="timeline-row-dnd-private" style="grid-template-columns: repeat(19, 1fr);">
                                     <!-- Dynamic 18 block cells -->
                                 </div>
                             </div>
@@ -610,18 +650,25 @@
 
     <!-- Parking & Directions Modal Overlay -->
     <div id="parking-modal" class="admin-login-overlay" style="display: none; position: fixed; z-index: 9999;">
-        <div class="admin-login-box" style="max-width: 900px; width: 95%; text-align: left; padding: 24px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; color: var(--color-primary-dark); display: flex; align-items: center; gap: 8px;">
+        <div class="admin-login-box"
+            style="max-width: 900px; width: 95%; text-align: left; padding: 24px; max-height: 90vh; overflow-y: auto;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 20px;">
+                <h2
+                    style="margin: 0; font-size: 20px; color: var(--color-primary-dark); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-route" style="color: var(--color-accent-magic);"></i> วิธีการเดินทาง และที่จอดรถ
                 </h2>
-                <button id="close-parking-modal" style="background: none; border: none; font-size: 20px; color: var(--color-primary); cursor: pointer;" title="ปิดหน้าต่าง">
+                <button id="close-parking-modal"
+                    style="background: none; border: none; font-size: 20px; color: var(--color-primary); cursor: pointer;"
+                    title="ปิดหน้าต่าง">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div style="font-size: 13.5px; line-height: 1.6; color: var(--color-primary-dark); margin-bottom: 20px;">
-                <p style="margin-top: 0;"><i class="fas fa-info-circle" style="color: var(--color-accent-magic);"></i> สามารถเดินทางมาร้านได้ง่ายๆ และมีจุดจอดรถรองรับลูกค้าทุกก๊วนตามภาพรายละเอียดด้านล่างนี้ได้เลยค่ะ:</p>
+                <p style="margin-top: 0;"><i class="fas fa-info-circle" style="color: var(--color-accent-magic);"></i>
+                    สามารถเดินทางมาร้านได้ง่ายๆ และมีจุดจอดรถรองรับลูกค้าทุกก๊วนตามภาพรายละเอียดด้านล่างนี้ได้เลยค่ะ:
+                </p>
             </div>
 
             <!-- Responsive 3 Images Grid Style -->
@@ -632,6 +679,7 @@
                     gap: 16px;
                     margin-bottom: 10px;
                 }
+
                 .parking-image-card {
                     border: 1.5px solid var(--color-border);
                     border-radius: var(--border-radius-sm);
@@ -642,18 +690,22 @@
                     box-shadow: var(--box-shadow-soft);
                     transition: var(--transition-smooth);
                 }
+
                 .parking-image-card:hover {
                     transform: translateY(-3px);
                     box-shadow: var(--box-shadow-medium);
                     border-color: var(--color-accent-magic);
                 }
+
                 .parking-img-container {
                     position: relative;
                     width: 100%;
-                    padding-top: 75%; /* 4:3 Aspect Ratio */
+                    padding-top: 75%;
+                    /* 4:3 Aspect Ratio */
                     background: #EEE7DD;
                     cursor: zoom-in;
                 }
+
                 .parking-img-container img {
                     position: absolute;
                     top: 0;
@@ -662,6 +714,7 @@
                     height: 100%;
                     object-fit: cover;
                 }
+
                 .parking-img-fallback {
                     position: absolute;
                     top: 0;
@@ -679,11 +732,13 @@
                     padding: 10px;
                     box-sizing: border-box;
                 }
+
                 .parking-img-fallback i {
                     font-size: 28px;
                     color: var(--color-primary-light);
                     margin-bottom: 8px;
                 }
+
                 .parking-caption {
                     padding: 12px;
                     font-size: 12px;
@@ -693,6 +748,7 @@
                     border-top: 1px solid var(--color-border);
                     text-align: center;
                 }
+
                 @media (max-width: 768px) {
                     .parking-grid {
                         grid-template-columns: 1fr;
@@ -700,12 +756,13 @@
                     }
                 }
             </style>
-            
+
             <div class="parking-grid">
                 <!-- Image 1 -->
                 <div class="parking-image-card">
                     <div class="parking-img-container" onclick="openLightbox('img/parking1.jpg')">
-                        <img src="img/parking1.jpg" alt="แผนที่การเดินทางเข้าร้าน" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <img src="img/parking1.jpg" alt="แผนที่การเดินทางเข้าร้าน"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="parking-img-fallback" style="display: none;">
                             <i class="fas fa-map-marked-alt"></i>
                             <span>แผนที่การเดินทาง<br>(ยังไม่ได้อัปโหลดรูปภาพ)</span>
@@ -717,7 +774,8 @@
                 <!-- Image 2 -->
                 <div class="parking-image-card">
                     <div class="parking-img-container" onclick="openLightbox('img/parking2.jpg')">
-                        <img src="img/parking2.jpg" alt="จุดจอดรถหน้าร้าน" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <img src="img/parking2.jpg" alt="จุดจอดรถหน้าร้าน"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="parking-img-fallback" style="display: none;">
                             <i class="fas fa-parking"></i>
                             <span>จุดจอดรถหน้าร้าน<br>(ยังไม่ได้อัปโหลดรูปภาพ)</span>
@@ -729,7 +787,8 @@
                 <!-- Image 3 -->
                 <div class="parking-image-card">
                     <div class="parking-img-container" onclick="openLightbox('img/parking3.jpg')">
-                        <img src="img/parking3.jpg" alt="จุดจอดรถสำรอง" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <img src="img/parking3.jpg" alt="จุดจอดรถสำรอง"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="parking-img-fallback" style="display: none;">
                             <i class="fas fa-map-signs"></i>
                             <span>จุดจอดรถสำรอง<br>(ยังไม่ได้อัปโหลดรูปภาพ)</span>
@@ -742,8 +801,11 @@
     </div>
 
     <!-- Lightbox for Image Zoom -->
-    <div id="parking-lightbox" class="admin-login-overlay" style="display: none; position: fixed; z-index: 10000; background: rgba(0,0,0,0.9); cursor: zoom-out; justify-content: center; align-items: center;" onclick="closeLightbox()">
-        <img id="lightbox-img" src="" alt="Zoomed view" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: var(--border-radius-sm); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+    <div id="parking-lightbox" class="admin-login-overlay"
+        style="display: none; position: fixed; z-index: 10000; background: rgba(0,0,0,0.9); cursor: zoom-out; justify-content: center; align-items: center;"
+        onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Zoomed view"
+            style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: var(--border-radius-sm); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
     </div>
 
     <!-- Footer -->

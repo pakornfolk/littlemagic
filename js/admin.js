@@ -379,7 +379,18 @@ function displayDatabaseMode() {
     
     if (LittleMagicDB.dbMode === 'firebase') {
         banner.className = "db-mode-banner firebase-active";
-        banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด`;
+        const isTestEmail = window.emailConfig && window.emailConfig.testMode;
+        if (isTestEmail) {
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#FFEACC; color:#B76E00; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-flask"></i> โหมดทดสอบ (ดักอีเมล)</span>`;
+            banner.style.background = "#FFF5E6";
+            banner.style.color = "#8A5A00";
+            banner.style.borderColor = "#FFE2B3";
+        } else {
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-check-circle"></i> เปิดบริการจริง (ส่งอีเมลจริง)</span>`;
+            banner.style.background = "";
+            banner.style.color = "";
+            banner.style.borderColor = "";
+        }
     } else {
         banner.className = "db-mode-banner";
         banner.innerHTML = `<i class="fas fa-laptop-code"></i> โหมดเดโมภายใน (Offline Mode) | ข้อมูลแผงแอดมินจำลองจากในเครื่อง | <a href="js/firebase-config.js" style="color:var(--color-primary-dark); font-weight:600; text-decoration:underline;">เปิดใช้ Firebase Cloud</a>`;

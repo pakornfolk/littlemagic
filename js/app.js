@@ -130,6 +130,24 @@ function initBookingForm() {
             // Show room selector group
             if (roomSelectorGroup) roomSelectorGroup.style.display = "";
             
+            // Adjust date picker min constraint for Board Game
+            if (inputDate) {
+                const todayObj = new Date();
+                const todayStr = todayObj.toISOString().split("T")[0];
+                inputDate.min = todayStr;
+                
+                // If current value is less than today, reset it
+                if (inputDate.value < todayStr) {
+                    if (todayObj.getDay() === 4) { // Thursday
+                        const tomorrowObj = new Date();
+                        tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+                        inputDate.value = tomorrowObj.toISOString().split("T")[0];
+                    } else {
+                        inputDate.value = todayStr;
+                    }
+                }
+            }
+            
             // Select regular hourly by default
             const regularHourlyRadio = document.getElementById("room-regular-hourly");
             if (regularHourlyRadio) {
@@ -140,6 +158,11 @@ function initBookingForm() {
                 toggleDurationField(regularHourlyRadio.value);
             }
             calculatePrice();
+
+            // Trigger date validation check
+            if (inputDate) {
+                inputDate.dispatchEvent(new Event('change'));
+            }
         });
 
         modeBtnDnd.addEventListener("click", () => {
@@ -149,6 +172,23 @@ function initBookingForm() {
             
             // Hide room selector group
             if (roomSelectorGroup) roomSelectorGroup.style.display = "none";
+            
+            // Adjust date picker min constraint for D&D (at least 2 days in advance)
+            if (inputDate) {
+                let dndMinDate = new Date();
+                dndMinDate.setDate(dndMinDate.getDate() + 2);
+                // Advance further if D&D is closed on Monday or store closed on Thursday
+                while (dndMinDate.getDay() === 1 || dndMinDate.getDay() === 4) {
+                    dndMinDate.setDate(dndMinDate.getDate() + 1);
+                }
+                const dndMinStr = dndMinDate.toISOString().split("T")[0];
+                inputDate.min = dndMinStr;
+                
+                // If current selected date is before the D&D minimum date, set it to the minimum date
+                if (inputDate.value < dndMinStr) {
+                    inputDate.value = dndMinStr;
+                }
+            }
             
             // Trigger UI toggling for D&D
             toggleDurationField('private_dnd');
@@ -316,14 +356,23 @@ function initBookingForm() {
                 const dayOfWeek = new Date(dateVal).getDay(); // 0 is Sunday, 1 is Monday, 4 is Thursday
                 
                 const revertDate = () => {
-                    const tObj = new Date();
-                    const tStr = tObj.toISOString().split("T")[0];
-                    if (tObj.getDay() === 4) {
-                        const tomObj = new Date();
-                        tomObj.setDate(tomObj.getDate() + 1);
-                        inputDate.value = tomObj.toISOString().split("T")[0];
+                    if (activeMode === 'dnd') {
+                        let dndMinDate = new Date();
+                        dndMinDate.setDate(dndMinDate.getDate() + 2);
+                        while (dndMinDate.getDay() === 1 || dndMinDate.getDay() === 4) {
+                            dndMinDate.setDate(dndMinDate.getDate() + 1);
+                        }
+                        inputDate.value = dndMinDate.toISOString().split("T")[0];
                     } else {
-                        inputDate.value = tStr;
+                        const tObj = new Date();
+                        const tStr = tObj.toISOString().split("T")[0];
+                        if (tObj.getDay() === 4) {
+                            const tomObj = new Date();
+                            tomObj.setDate(tomObj.getDate() + 1);
+                            inputDate.value = tomObj.toISOString().split("T")[0];
+                        } else {
+                            inputDate.value = tStr;
+                        }
                     }
                     updatePrivateRoomAvailability(cachedBookings);
                 };
@@ -917,7 +966,18 @@ function displayDatabaseMode() {
 
     if (LittleMagicDB.dbMode === 'firebase') {
         banner.className = "db-mode-banner firebase-active";
-        banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์`;
+        const isTestEmail = window.emailConfig && window.emailConfig.testMode;
+        if (isTestEmail) {
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์ <span style="background:#FFEACC; color:#B76E00; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-flask"></i> โหมดทดสอบระบบ </span>`;
+            banner.style.background = "#FFF5E6";
+            banner.style.color = "#8A5A00";
+            banner.style.borderColor = "#FFE2B3";
+        } else {
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์ <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-ticket-alt"></i> Little Magic Booking </span>`;
+            banner.style.background = "";
+            banner.style.color = "";
+            banner.style.borderColor = "";
+        }
     } else {
         banner.className = "db-mode-banner";
         banner.innerHTML = `<i class="fas fa-laptop-code"></i> โหมดเดโมภายใน (Offline Mode): ข้อมูลถูกเซฟในเครื่องคุณเท่านั้น | <a href="js/firebase-config.js" style="color:var(--color-primary-dark); font-weight:600; text-decoration:underline;">เปิดใช้คลาวด์ Firebase</a>`;
@@ -1220,37 +1280,65 @@ function initScheduleTab() {
         const scheduleDateInput = document.getElementById(`schedule-${type}-date`);
         if (!scheduleDateInput) return;
 
-        // Set initial date: Today (or tomorrow if today is Thursday)
-        const todayObj = new Date();
-        const todayStr = todayObj.toISOString().split("T")[0];
-        scheduleDateInput.min = todayStr;
+        const getMinOpenDateStr = (scheduleType) => {
+            if (scheduleType === 'dnd') {
+                let dndMinDate = new Date();
+                dndMinDate.setDate(dndMinDate.getDate() + 2);
+                while (dndMinDate.getDay() === 1 || dndMinDate.getDay() === 4) {
+                    dndMinDate.setDate(dndMinDate.getDate() + 1);
+                }
+                return dndMinDate.toISOString().split("T")[0];
+            } else {
+                let bgMinDate = new Date();
+                while (bgMinDate.getDay() === 4) {
+                    bgMinDate.setDate(bgMinDate.getDate() + 1);
+                }
+                return bgMinDate.toISOString().split("T")[0];
+            }
+        };
 
-        if (todayObj.getDay() === 4) { // Thursday
-            const tomorrowObj = new Date();
-            tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-            scheduleDateInput.value = tomorrowObj.toISOString().split("T")[0];
-        } else {
-            scheduleDateInput.value = todayStr;
-        }
+        const initialMinStr = getMinOpenDateStr(type);
+        scheduleDateInput.min = initialMinStr;
+        scheduleDateInput.value = initialMinStr;
 
         // Bind change listener
         scheduleDateInput.addEventListener("change", () => {
             const dateVal = scheduleDateInput.value;
             if (dateVal) {
-                const dayOfWeek = new Date(dateVal).getDay(); // 4 is Thursday
-                if (dayOfWeek === 4) {
-                    showToast("ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ", "error");
-
-                    // Revert to today (or tomorrow if today is Thursday)
-                    const tObj = new Date();
-                    const tStr = tObj.toISOString().split("T")[0];
-                    if (tObj.getDay() === 4) {
-                        const tomObj = new Date();
-                        tomObj.setDate(tomObj.getDate() + 1);
-                        scheduleDateInput.value = tomObj.toISOString().split("T")[0];
+                const dayOfWeek = new Date(dateVal).getDay();
+                let isClosed = false;
+                let errorMsg = "";
+                
+                if (type === 'boardgame' && dayOfWeek === 4) {
+                    isClosed = true;
+                    errorMsg = "ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ";
+                } else if (type === 'dnd') {
+                    if (dayOfWeek === 1) {
+                        isClosed = true;
+                        errorMsg = "ขออภัยครับ บริการ D&D งดให้บริการในวันจันทร์ กรุณาเลือกวันอื่นนะครับ";
+                    } else if (dayOfWeek === 4) {
+                        isClosed = true;
+                        errorMsg = "ขออภัยครับ ร้านปิดทำการทุกวันพฤหัสบดี กรุณาเลือกวันอื่นนะครับ";
                     } else {
-                        scheduleDateInput.value = tStr;
+                        // Check if date is at least 2 days from today
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const selectedDateObj = new Date(dateVal);
+                        selectedDateObj.setHours(0, 0, 0, 0);
+                        const diffTime = selectedDateObj - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays < 2) {
+                            isClosed = true;
+                            errorMsg = "ขออภัยครับ บริการ D&D จำเป็นต้องดูหรือจองล่วงหน้าอย่างน้อย 2 วันครับ";
+                        }
                     }
+                }
+                
+                if (isClosed) {
+                    showToast(errorMsg, "error");
+                    // Revert to next open date
+                    scheduleDateInput.value = getMinOpenDateStr(type);
                 }
             }
             renderSchedule();
@@ -1313,13 +1401,29 @@ function renderScheduleSection(type) {
 
     if (vibeBadge && vibeText && vibeGaugeFill) {
         const dayOfWeek = new Date(selectedDate).getDay();
-        if (dayOfWeek === 4) {
+        let isClosed = false;
+        let closedReason = "";
+        
+        if (type === 'boardgame' && dayOfWeek === 4) {
+            isClosed = true;
+            closedReason = "วันนี้ร้านหยุดให้บริการประจำสัปดาห์ (วันพฤหัสบดี) เลือกวันถัดไปได้เลยนะ!";
+        } else if (type === 'dnd') {
+            if (dayOfWeek === 1) {
+                isClosed = true;
+                closedReason = "วันนี้บริการ D&D งดให้บริการประจำสัปดาห์ (วันจันทร์) เลือกวันถัดไปได้เลยนะ!";
+            } else if (dayOfWeek === 4) {
+                isClosed = true;
+                closedReason = "วันนี้ร้านหยุดให้บริการประจำสัปดาห์ (วันพฤหัสบดี) เลือกวันถัดไปได้เลยนะ!";
+            }
+        }
+
+        if (isClosed) {
             // Closed
             vibeBadge.textContent = "ร้านปิดทำการ ❌";
             vibeBadge.className = "badge badge-cancelled";
             vibeBadge.style.backgroundColor = "";
             vibeBadge.style.color = "";
-            vibeText.textContent = "วันนี้ร้านหยุดให้บริการประจำสัปดาห์ (วันพฤหัสบดี) เลือกวันถัดไปได้เลยนะ!";
+            vibeText.textContent = closedReason;
             vibeGaugeFill.style.width = "0%";
             vibeGaugeFill.className = "vibe-gauge-fill";
         } else {
@@ -1471,22 +1575,74 @@ function renderScheduleSection(type) {
         const rowDnd = document.getElementById("timeline-row-dnd-private");
         if (rowDnd) {
             rowDnd.innerHTML = '';
-            const isClosed = new Date(selectedDate).getDay() === 4;
-
-            const dndSlots = Array(18).fill(null);
-            activeBookings.forEach(booking => {
-                // Both 'dnd' and 'private' roomTypes occupy the D&D private room timeline row
-                if (booking.roomType === 'dnd' || booking.roomType === 'private') {
-                    const { startSlot, endSlot } = getBookingSlotRange(booking);
-                    for (let i = startSlot; i < endSlot; i++) {
-                        if (i < 18) {
-                            dndSlots[i] = booking;
-                        }
+            const dayOfWeek = new Date(selectedDate).getDay();
+            const isClosed = dayOfWeek === 1 || dayOfWeek === 4;
+            // Helper to render a D&D session block
+            const renderDndSession = (colStart, colEnd, startHour, timeLabel, sessionBooking) => {
+                const block = document.createElement("div");
+                block.style.gridColumn = `${colStart} / ${colEnd}`;
+                
+                if (isClosed) {
+                    block.className = "time-block occupied-pending";
+                    block.style.cursor = "not-allowed";
+                    block.innerHTML = `<span style="font-size: 11px; font-weight: 700;">ปิดทำการ</span>`;
+                } else if (sessionBooking) {
+                    let statusClass = "occupied-pending";
+                    let statusName = "รออนุมัติ";
+                    if (sessionBooking.status === 'confirmed') {
+                        statusClass = "occupied-confirmed";
+                        statusName = "จองแล้ว";
+                    } else if (sessionBooking.status === 'active') {
+                        statusClass = "occupied-active";
+                        statusName = "กำลังเล่น";
                     }
+                    
+                    const endTimeStr = getBookingEndTime(sessionBooking);
+                    block.className = `time-block ${statusClass}`;
+                    block.title = `จองแล้ว: ${sessionBooking.time} - ${endTimeStr} น. (คุณ ${maskName(sessionBooking.name)} - ${statusName})`;
+                    block.innerHTML = `<span style="font-size: 11px; font-weight: 700; white-space: nowrap;">จองแล้ว: ${sessionBooking.time} - ${endTimeStr} น. (คุณ ${maskName(sessionBooking.name)})</span>`;
+                } else {
+                    block.className = "time-block free";
+                    block.title = `เวลา ${timeLabel} น. (ว่าง - คลิกเพื่อจองรอบนี้)`;
+                    block.innerHTML = `<span style="font-size: 11px; font-weight: 700;"><i class="fas fa-plus-circle"></i> ว่าง (รอบ ${timeLabel} น.)</span>`;
+                    block.addEventListener("click", () => {
+                        handleQuickBook(selectedDate, startHour, 'dnd');
+                    });
                 }
-            });
+                rowDnd.appendChild(block);
+            };
 
-            renderRowBlocks(rowDnd, dndSlots, 'dnd', isClosed, selectedDate);
+            // 1. Session 1: 15:00 - 19:30 (Grid Column 1 to 10, i.e. 1 / 10)
+            const session1Booking = activeBookings.find(b => {
+                if (b.roomType === 'dnd' || b.roomType === 'private') {
+                    const { startSlot, endSlot } = getBookingSlotRange(b);
+                    return (startSlot < 9 && endSlot > 0);
+                }
+                return false;
+            });
+            renderDndSession(1, 10, "15:00", "15:00 - 19:00", session1Booking);
+
+            // 2. Break: 19:30 - 20:00 (Grid Column 10 to 11, i.e. 10 / 11)
+            const breakBlock = document.createElement("div");
+            breakBlock.style.gridColumn = "10 / 11";
+            breakBlock.className = "time-block";
+            breakBlock.style.background = "#f1f3f5";
+            breakBlock.style.color = "#868e96";
+            breakBlock.style.border = "1px dashed #dee2e6";
+            breakBlock.style.cursor = "not-allowed";
+            breakBlock.title = "ช่วงพักระบบทำความสะอาด / พักทานอาหาร";
+            breakBlock.innerHTML = `<span style="font-size: 10px; font-weight: 700; color: #adb5bd;">พักระบบ</span>`;
+            rowDnd.appendChild(breakBlock);
+
+            // 3. Session 2: 20:00 - 24:00 (Grid Column 11 to 20, i.e. 11 / 20)
+            const session2Booking = activeBookings.find(b => {
+                if (b.roomType === 'dnd' || b.roomType === 'private') {
+                    const { startSlot, endSlot } = getBookingSlotRange(b);
+                    return (startSlot < 19 && endSlot > 10);
+                }
+                return false;
+            });
+            renderDndSession(11, 20, "20:00", "20:00 - 24:00", session2Booking);
         }
     }
 

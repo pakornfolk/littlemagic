@@ -973,7 +973,7 @@ function displayDatabaseMode() {
             banner.style.color = "#8A5A00";
             banner.style.borderColor = "#FFE2B3";
         } else {
-            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์ <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-ticket-alt"></i> Little Magic Booking </span>`;
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อ Firebase Realtime Cloud: ระบบจองเรียลไทม์ออนไลน์ <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"> Little Magic Booking </span>`;
             banner.style.background = "";
             banner.style.color = "";
             banner.style.borderColor = "";

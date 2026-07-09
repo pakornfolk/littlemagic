@@ -381,12 +381,12 @@ function displayDatabaseMode() {
         banner.className = "db-mode-banner firebase-active";
         const isTestEmail = window.emailConfig && window.emailConfig.testMode;
         if (isTestEmail) {
-            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#FFEACC; color:#B76E00; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-flask"></i> โหมดทดสอบ (ดักอีเมล)</span>`;
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#FFEACC; color:#B76E00; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-flask"></i> โหมดทดสอบ </span>`;
             banner.style.background = "#FFF5E6";
             banner.style.color = "#8A5A00";
             banner.style.borderColor = "#FFE2B3";
         } else {
-            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;"><i class="fas fa-check-circle"></i> เปิดบริการจริง (ส่งอีเมลจริง)</span>`;
+            banner.innerHTML = `<i class="fas fa-cloud"></i> เชื่อมต่อผู้ดูแลระบบผ่านคลาวด์ Firebase | แผงการควบคุมแบบสด <span style="background:#D1E7DD; color:#0F5132; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:6px;">Admin Mode/span>`;
             banner.style.background = "";
             banner.style.color = "";
             banner.style.borderColor = "";
